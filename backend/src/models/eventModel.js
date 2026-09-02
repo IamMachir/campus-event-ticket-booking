@@ -28,4 +28,23 @@ async function incrementSeatsBooked(eventId) {
   await db.query('UPDATE events SET seats_booked = seats_booked + 1 WHERE id = ?', [eventId]);
 }
 
-module.exports = { createEvent, getAllEvents, getEventById, incrementSeatsBooked };
+async function updateEvent(id, { title, description, categoryId, location, startTime, endTime, capacity }) {
+  await db.query(
+    `UPDATE events SET title = ?, description = ?, category_id = ?, location = ?,
+     start_time = ?, end_time = ?, capacity = ? WHERE id = ?`,
+    [title, description, categoryId, location, startTime, endTime, capacity, id]
+  );
+}
+
+async function deleteEvent(id) {
+  await db.query('DELETE FROM events WHERE id = ?', [id]);
+}
+
+module.exports = {
+  createEvent,
+  getAllEvents,
+  getEventById,
+  incrementSeatsBooked,
+  updateEvent,
+  deleteEvent,
+};

@@ -6,6 +6,7 @@ export default function Navbar() {
       <Link to="/" className="font-bold text-lg">Campus Events</Link>
       <div className="flex gap-4 text-sm">
         <Link to="/">Events</Link>
+        <Link to="/events/new">Create Event</Link>
         <Link to="/bookings">My Bookings</Link>
         <Link to="/login">Login</Link>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client';
 
 export default function Events() {
@@ -18,11 +19,15 @@ export default function Events() {
       {error && <p className="text-red-600">{error}</p>}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {events.map((event) => (
-          <div key={event.id} className="border rounded-lg p-4 shadow-sm">
+          <Link
+            key={event.id}
+            to={`/events/${event.id}`}
+            className="border rounded-lg p-4 shadow-sm hover:shadow-md transition"
+          >
             <h2 className="font-semibold">{event.title}</h2>
             <p className="text-sm text-gray-600">{event.location}</p>
             <p className="text-sm text-gray-500">{new Date(event.start_time).toLocaleString()}</p>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
