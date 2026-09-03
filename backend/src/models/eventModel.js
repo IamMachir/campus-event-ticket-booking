@@ -28,6 +28,10 @@ async function incrementSeatsBooked(eventId) {
   await db.query('UPDATE events SET seats_booked = seats_booked + 1 WHERE id = ?', [eventId]);
 }
 
+async function decrementSeatsBooked(eventId) {
+  await db.query('UPDATE events SET seats_booked = GREATEST(seats_booked - 1, 0) WHERE id = ?', [eventId]);
+}
+
 async function updateEvent(id, { title, description, categoryId, location, startTime, endTime, capacity }) {
   await db.query(
     `UPDATE events SET title = ?, description = ?, category_id = ?, location = ?,
@@ -45,6 +49,7 @@ module.exports = {
   getAllEvents,
   getEventById,
   incrementSeatsBooked,
+  decrementSeatsBooked,
   updateEvent,
   deleteEvent,
 };

@@ -1,6 +1,13 @@
 const QRCode = require('qrcode');
-const { createBooking, getBookingsByUser, findByTicketCode, markCheckedIn } = require('../models/bookingModel');
-const { getEventById, incrementSeatsBooked } = require('../models/eventModel');
+const {
+  createBooking,
+  getBookingsByUser,
+  findByTicketCode,
+  findById,
+  cancelBooking,
+  markCheckedIn,
+} = require('../models/bookingModel');
+const { getEventById, incrementSeatsBooked, decrementSeatsBooked } = require('../models/eventModel');
 const { generateTicketCode } = require('../utils/ticket');
 
 async function bookEvent(req, res) {
@@ -11,6 +18,15 @@ async function bookEvent(req, res) {
 
     if (event.seats_booked >= event.capacity) {
       return res.status(400).json({ error: 'Event is fully booked' });
+    }
+
+    // Prevent the same user from booking the same event twice
+    const existingBookings = await getBookingsByUser(req.user.id);
+    const alreadyBooked = existingBookings.some(
+      (b) => b.event_id === Number(eventId) && b.status !== 'cancelled'
+    );
+    if (alreadyBooked) {
+      return res.status(409).json({ error: 'You already have a booking for this event' });
     }
 
     const ticketCode = generateTicketCode();
@@ -34,6 +50,26 @@ async function myBookings(req, res) {
   }
 }
 
+async function cancelMyBooking(req, res) {
+  try {
+    const booking = await findById(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'You can only cancel your own bookings' });
+    }
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({ error: 'Booking is already cancelled' });
+    }
+
+    await cancelBooking(booking.id);
+    await decrementSeatsBooked(booking.event_id);
+
+    res.json({ message: 'Booking cancelled' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to cancel booking', details: err.message });
+  }
+}
+
 async function checkIn(req, res) {
   try {
     const { ticketCode } = req.body;
@@ -51,4 +87,4 @@ async function checkIn(req, res) {
   }
 }
 
-module.exports = { bookEvent, myBookings, checkIn };
+module.exports = { bookEvent, myBookings, cancelMyBooking, checkIn };

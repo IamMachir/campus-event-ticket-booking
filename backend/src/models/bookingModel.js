@@ -25,6 +25,15 @@ async function findByTicketCode(ticketCode) {
   return rows[0] || null;
 }
 
+async function findById(id) {
+  const [rows] = await db.query('SELECT * FROM bookings WHERE id = ?', [id]);
+  return rows[0] || null;
+}
+
+async function cancelBooking(id) {
+  await db.query("UPDATE bookings SET status = 'cancelled' WHERE id = ?", [id]);
+}
+
 async function markCheckedIn(ticketCode) {
   await db.query(
     "UPDATE bookings SET status = 'checked_in', checked_in_at = NOW() WHERE ticket_code = ?",
@@ -32,4 +41,11 @@ async function markCheckedIn(ticketCode) {
   );
 }
 
-module.exports = { createBooking, getBookingsByUser, findByTicketCode, markCheckedIn };
+module.exports = {
+  createBooking,
+  getBookingsByUser,
+  findByTicketCode,
+  findById,
+  cancelBooking,
+  markCheckedIn,
+};
