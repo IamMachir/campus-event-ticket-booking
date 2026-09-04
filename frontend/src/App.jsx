@@ -6,6 +6,7 @@ import Bookings from './pages/Bookings';
 import CreateEvent from './pages/CreateEvent';
 import EventDetail from './pages/EventDetail';
 import About from './pages/About';
+import CheckIn from './pages/CheckIn';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/events/new" element={<CreateEvent />} />
         <Route path="/events/:id" element={<EventDetail />} />
         <Route path="/about" element={<About />} />
+        <Route path="/check-in" element={<CheckIn />} />
       </Routes>
     </div>
   );

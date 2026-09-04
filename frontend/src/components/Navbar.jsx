@@ -8,6 +8,7 @@ export default function Navbar() {
         <Link to="/">Events</Link>
         <Link to="/events/new">Create Event</Link>
         <Link to="/bookings">My Bookings</Link>
+        <Link to="/check-in">Check-In</Link>
         <Link to="/login">Login</Link>
         <Link to="/about">About</Link>
       </div>
