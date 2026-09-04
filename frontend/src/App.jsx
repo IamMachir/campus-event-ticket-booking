@@ -7,6 +7,7 @@ import CreateEvent from './pages/CreateEvent';
 import EventDetail from './pages/EventDetail';
 import About from './pages/About';
 import CheckIn from './pages/CheckIn';
+import PrivateRoute from './components/PrivateRoute';
 
 export default function App() {
   return (
@@ -15,11 +16,32 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Events />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/bookings" element={<Bookings />} />
-        <Route path="/events/new" element={<CreateEvent />} />
+        <Route
+          path="/bookings"
+          element={
+            <PrivateRoute>
+              <Bookings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/events/new"
+          element={
+            <PrivateRoute>
+              <CreateEvent />
+            </PrivateRoute>
+          }
+        />
         <Route path="/events/:id" element={<EventDetail />} />
         <Route path="/about" element={<About />} />
-        <Route path="/check-in" element={<CheckIn />} />
+        <Route
+          path="/check-in"
+          element={
+            <PrivateRoute>
+              <CheckIn />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </div>
   );
