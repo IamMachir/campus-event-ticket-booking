@@ -53,6 +53,15 @@ mysql -u root -p < migrations/001_init_schema.sql
 npm run dev
 ```
 
+### Seed demo data (optional but recommended for demos)
+
+```bash
+cd backend
+npm run seed
+```
+
+This creates a demo organizer (`organizer@demo.campus.edu` / `demo1234`), a demo student (`student@demo.campus.edu` / `demo1234`), three sample events across different categories, and a couple of sample bookings — so the app isn't empty the first time you open it. Safe to re-run.
+
 ### Frontend
 
 ```bash
@@ -63,16 +72,37 @@ npm run dev
 
 The frontend expects the backend at `http://localhost:5000/api` (configurable via `VITE_API_URL`).
 
-## Core Features (in progress)
+## Deployment
+
+- **Backend**: `render.yaml` is included for one-click deployment on [Render](https://render.com) — connect the repo, Render reads the blueprint, and you'll be prompted for your MySQL credentials as environment variables (marked `sync: false`). Railway works similarly if you prefer it.
+- **Database**: A managed MySQL instance on Railway, PlanetScale, or Render's own MySQL add-on. Run the migration (`migrations/001_init_schema.sql`) once against it, then optionally `npm run seed`.
+- **Frontend**: Deploy the `frontend/` folder to Vercel or Netlify. Set `VITE_API_URL` to your deployed backend's `/api` URL, and make sure the backend's CORS config allows your frontend's domain.
+
+## Demo Script (for your defense)
+
+1. Open the app as a guest — browse the seeded events on the home page.
+2. Log in as the demo student (`student@demo.campus.edu` / `demo1234`) and show an existing booking with its QR ticket under "My Bookings".
+3. Log in as the demo organizer (`organizer@demo.campus.edu` / `demo1234`) and create a new event via "Create Event".
+4. Book a seat as the student on the new event, showing the seat counter decrease and the QR code generated.
+5. Go to "Check-In" as the organizer and scan (or manually enter) the ticket code to demonstrate check-in.
+6. Cancel a booking from "My Bookings" to show the seat being released back.
+
+## Core Features
 
 - [x] User registration & login (JWT-based)
-- [x] Event listing
+- [x] Event listing, detail, create/edit/delete (organizer-owned)
 - [x] Ticket booking with QR code generation
-- [x] Organizer check-in endpoint
-- [ ] Organizer event creation UI
-- [ ] QR scanner check-in UI
-- [ ] Booking capacity edge cases & notifications
+- [x] Booking cancellation with seat release
+- [x] Duplicate-booking prevention
+- [x] Organizer check-in via QR scanner (with manual code fallback)
+- [x] Route guards on authenticated pages
+- [x] Server-side input validation on all write endpoints
+- [x] Responsive layout + loading states
+- [x] Seed script for demo data
+- [ ] Email notifications on booking
+- [ ] Organizer analytics dashboard (bookings per event, check-in rate)
 
 ## Status
 
-Foundational scaffold: database schema, authentication, core API routes, and base frontend pages are in place. Feature work is ongoing.
+Feature-complete for a capstone MVP: schema, auth, full event/booking lifecycle, QR check-in, validation, and responsive UI are all in place, with seed data and a deployment blueprint ready for hosting. Analytics and notifications are noted as future work.
+
