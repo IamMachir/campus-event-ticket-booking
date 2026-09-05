@@ -44,6 +44,26 @@ async function deleteEvent(id) {
   await db.query('DELETE FROM events WHERE id = ?', [id]);
 }
 
+// Per-event booking/check-in breakdown for an organizer's analytics dashboard
+async function getOrganizerStats(organizerId) {
+  const [rows] = await db.query(
+    `SELECT
+       e.id,
+       e.title,
+       e.capacity,
+       e.seats_booked,
+       COUNT(CASE WHEN b.status = 'checked_in' THEN 1 END) AS checked_in_count,
+       COUNT(CASE WHEN b.status = 'cancelled' THEN 1 END) AS cancelled_count
+     FROM events e
+     LEFT JOIN bookings b ON b.event_id = e.id
+     WHERE e.organizer_id = ?
+     GROUP BY e.id
+     ORDER BY e.start_time ASC`,
+    [organizerId]
+  );
+  return rows;
+}
+
 module.exports = {
   createEvent,
   getAllEvents,
@@ -52,4 +72,5 @@ module.exports = {
   decrementSeatsBooked,
   updateEvent,
   deleteEvent,
+  getOrganizerStats,
 };

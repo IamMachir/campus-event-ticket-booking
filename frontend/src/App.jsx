@@ -8,6 +8,7 @@ import EventDetail from './pages/EventDetail';
 import About from './pages/About';
 import CheckIn from './pages/CheckIn';
 import PrivateRoute from './components/PrivateRoute';
+import OrganizerDashboard from './pages/OrganizerDashboard';
 
 export default function App() {
   return (
@@ -39,6 +40,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <CheckIn />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizer/dashboard"
+          element={
+            <PrivateRoute>
+              <OrganizerDashboard />
             </PrivateRoute>
           }
         />

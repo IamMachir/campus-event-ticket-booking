@@ -4,6 +4,7 @@ const {
   getEventById,
   updateEvent,
   deleteEvent,
+  getOrganizerStats,
 } = require('../models/eventModel');
 
 async function listEvents(req, res) {
@@ -90,4 +91,13 @@ async function removeEvent(req, res) {
   }
 }
 
-module.exports = { listEvents, getEvent, addEvent, editEvent, removeEvent };
+async function organizerStats(req, res) {
+  try {
+    const stats = await getOrganizerStats(req.user.id);
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch organizer stats', details: err.message });
+  }
+}
+
+module.exports = { listEvents, getEvent, addEvent, editEvent, removeEvent, organizerStats };
