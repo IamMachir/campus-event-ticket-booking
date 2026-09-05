@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 
 export default function Navbar() {
   return (
-    <nav className="bg-emerald-700 text-white px-6 py-4 flex justify-between items-center">
+    <nav className="bg-emerald-700 text-white px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
       <Link to="/" className="font-bold text-lg">Campus Events</Link>
-      <div className="flex gap-4 text-sm">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <Link to="/">Events</Link>
         <Link to="/events/new">Create Event</Link>
         <Link to="/bookings">My Bookings</Link>

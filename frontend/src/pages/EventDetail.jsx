@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import QrTicket from '../components/QrTicket';
+import Spinner from '../components/Spinner';
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -48,14 +49,14 @@ export default function EventDetail() {
     return <p className="p-6 text-red-600">{error}</p>;
   }
   if (!event) {
-    return <p className="p-6 text-gray-500">Loading…</p>;
+    return <Spinner label="Loading event…" />;
   }
 
   const seatsLeft = event.capacity - event.seats_booked;
   const isFull = seatsLeft <= 0;
 
   return (
-    <div className="p-6 max-w-lg mx-auto">
+    <div className="p-4 sm:p-6 max-w-lg mx-auto">
       <h1 className="text-2xl font-semibold">{event.title}</h1>
       <p className="text-sm text-gray-500 mt-1">{event.location}</p>
       <p className="text-sm text-gray-500">{new Date(event.start_time).toLocaleString()}</p>
