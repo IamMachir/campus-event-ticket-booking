@@ -75,6 +75,15 @@ npm run seed
 
 This creates a demo organizer (`organizer@demo.campus.edu` / `demo1234`), a demo student (`student@demo.campus.edu` / `demo1234`), three sample events across different categories, and a couple of sample bookings — so the app isn't empty the first time you open it. Safe to re-run.
 
+### Run tests
+
+```bash
+cd backend
+npm test
+```
+
+Covers input validation rules, JWT auth middleware, ticket code generation, and booking controller logic (duplicate-booking prevention, capacity checks, cancellation) using Jest with mocked models — no database connection required to run the suite.
+
 ### Frontend
 
 ```bash
