@@ -8,7 +8,9 @@ const {
   markCheckedIn,
 } = require('../models/bookingModel');
 const { getEventById, incrementSeatsBooked, decrementSeatsBooked } = require('../models/eventModel');
+const { findUserById } = require('../models/userModel');
 const { generateTicketCode } = require('../utils/ticket');
+const { sendBookingConfirmation } = require('../utils/email');
 
 async function bookEvent(req, res) {
   try {
@@ -34,6 +36,21 @@ async function bookEvent(req, res) {
     await incrementSeatsBooked(eventId);
 
     const qrDataUrl = await QRCode.toDataURL(ticketCode);
+
+    // Fire-and-forget: email delivery (or its console fallback) should never
+    // delay the booking response or fail the booking if it errors.
+    findUserById(req.user.id)
+      .then((user) => {
+        if (!user) return;
+        return sendBookingConfirmation({
+          toEmail: user.email,
+          toName: user.full_name,
+          eventTitle: event.title,
+          eventStartTime: event.start_time,
+          ticketCode,
+        });
+      })
+      .catch((err) => console.error('Booking confirmation email failed:', err.message));
 
     res.status(201).json({ bookingId, ticketCode, qrCode: qrDataUrl });
   } catch (err) {
