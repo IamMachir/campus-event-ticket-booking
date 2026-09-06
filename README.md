@@ -2,6 +2,19 @@
 
 A web application that helps university students discover campus events (club programs, seminars, cultural nights) and book tickets online. Organizers create and manage events; students browse, book seats, and receive digital tickets with QR codes for check-in at the venue. The system replaces manual, paper-based event announcements and ticketing with a centralized, easy-to-use web app.
 
+## Group Members
+
+Computer Science and Engineering (CSE), 5th Year, Section 1
+
+| ID | Name |
+|---|---|
+| UGE/27816/14 | Abenezer Tewodros |
+| UGE/27834/14 | Efa Mirkana Abdisa |
+| UGE/27638/14 | Machir Tadesse Woldemariam |
+| UGE/27831/14 | Musbha Rida |
+| UGE/27830/14 | Samii Girmaa |
+| UGE/27827/14 | Seid Jemal |
+
 ## Tech Stack
 
 **Frontend**
