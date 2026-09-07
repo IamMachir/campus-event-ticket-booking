@@ -3,6 +3,18 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { createUser, findUserByEmail } = require('../models/userModel');
 
+/**
+ * Registers a new user account.
+ *
+ * Security notes (OWASP A02: Cryptographic Failures / A07: Auth Failures):
+ * - Passwords are never stored in plaintext; bcrypt hashes with a salt
+ *   round of 10 before persisting.
+ * - Duplicate emails are rejected to prevent silent account overwrites.
+ *
+ * @param {import('express').Request} req - body: { fullName, email, password, role? }
+ * @param {import('express').Response} res
+ * @returns {Promise<void>} 201 with the created user's public fields, or 4xx/5xx on failure.
+ */
 async function register(req, res) {
   try {
     const { fullName, email, password, role } = req.body;
@@ -24,6 +36,17 @@ async function register(req, res) {
   }
 }
 
+/**
+ * Authenticates a user and issues a signed JWT.
+ *
+ * Deliberately returns the same generic "Invalid email or password" message
+ * whether the email doesn't exist or the password is wrong, to avoid
+ * leaking which emails are registered (user enumeration mitigation).
+ *
+ * @param {import('express').Request} req - body: { email, password }
+ * @param {import('express').Response} res
+ * @returns {Promise<void>} 200 with { token, user } on success, 401 on invalid credentials.
+ */
 async function login(req, res) {
   try {
     const { email, password } = req.body;

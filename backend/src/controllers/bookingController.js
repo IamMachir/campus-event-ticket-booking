@@ -12,6 +12,20 @@ const { findUserById } = require('../models/userModel');
 const { generateTicketCode } = require('../utils/ticket');
 const { sendBookingConfirmation } = require('../utils/email');
 
+/**
+ * Books a seat for the authenticated user on the given event.
+ *
+ * Enforces two business invariants at the application layer:
+ * 1. Capacity: rejects the booking once seats_booked >= capacity.
+ * 2. No duplicates: a user cannot hold two active (non-cancelled) bookings
+ *    for the same event.
+ *
+ * On success, generates a unique ticket code + QR code and fires an
+ * async (non-blocking) booking confirmation email.
+ *
+ * @param {import('express').Request} req - body: { eventId }, req.user set by requireAuth
+ * @param {import('express').Response} res
+ */
 async function bookEvent(req, res) {
   try {
     const { eventId } = req.body;
@@ -58,6 +72,7 @@ async function bookEvent(req, res) {
   }
 }
 
+/** @param {import('express').Request} req @param {import('express').Response} res */
 async function myBookings(req, res) {
   try {
     const bookings = await getBookingsByUser(req.user.id);
@@ -67,6 +82,13 @@ async function myBookings(req, res) {
   }
 }
 
+/**
+ * Cancels a booking owned by the authenticated user and releases its seat
+ * back to the event's available capacity.
+ *
+ * @param {import('express').Request} req - params: { id: bookingId }
+ * @param {import('express').Response} res
+ */
 async function cancelMyBooking(req, res) {
   try {
     const booking = await findById(req.params.id);
@@ -87,6 +109,13 @@ async function cancelMyBooking(req, res) {
   }
 }
 
+/**
+ * Marks a ticket as checked-in at the event venue. Restricted to
+ * organizer/admin roles via requireRole middleware on the route.
+ *
+ * @param {import('express').Request} req - body: { ticketCode }
+ * @param {import('express').Response} res
+ */
 async function checkIn(req, res) {
   try {
     const { ticketCode } = req.body;
