@@ -1,149 +1,139 @@
-# Campus Event Discovery & Ticket Booking Web App
+# Campus Event Ticket Booking System
 
-A web application that helps university students discover campus events (club programs, seminars, cultural nights) and book tickets online. Organizers create and manage events; students browse, book seats, and receive digital tickets with QR codes for check-in at the venue. The system replaces manual, paper-based event announcements and ticketing with a centralized, easy-to-use web app.
+A web-based platform for browsing, booking, and managing campus event tickets at Adama Science and Technology University (ASTU). Our group built this as part of a course project to apply what we learned about full-stack web development, database design, and user interface design.
+
+## What It Does
+
+- **Browse Events** — Students can view upcoming campus events filtered by category (academic, cultural, sports, social, workshop) and search by name.
+- **Book Tickets** — Authenticated students can reserve a seat by selecting a seat number and receiving a unique booking code.
+- **Manage Tickets** — Students can view their active and past bookings and cancel bookings if needed.
+- **Admin Dashboard** — Admin users can create, edit, and delete events, change event status, and view booking statistics.
+- **User Profiles** — Each user has a profile with their name, student ID, department, and phone number.
 
 ## Tech Stack
 
-**Frontend**
-- React (Vite)
-- Tailwind CSS
-- React Router
-- Axios
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18 + TypeScript + Vite |
+| Styling | Tailwind CSS with custom ASTU-themed colors |
+| Icons | Lucide React |
+| Backend & Database | Supabase (PostgreSQL + Auth + Row Level Security) |
+| Routing | React Router DOM v6 |
 
-**Backend**
-- Node.js + Express.js
-- MySQL (via `mysql2`)
-- JWT authentication (`jsonwebtoken`, `bcryptjs`)
-- QR code generation (`qrcode`)
+## Design
 
-## Technical Concept Synthesis
-
-This section maps the implementation to the Capstone Guide's Section 4 requirement of demonstrating advanced concepts from at least three domains.
-
-**1. Security**
-- Password storage uses bcrypt hashing with salting (never plaintext), mitigating OWASP A02 (Cryptographic Failures).
-- JWT-based authentication with role-based access control (`requireAuth` / `requireRole` middleware) mitigates A01 (Broken Access Control) — organizer-only routes verify both a valid token and the correct role, and event edit/delete additionally verify the requester owns the event.
-- Login returns an identical error message for "no such user" and "wrong password" to prevent user-enumeration attacks.
-- `helmet` sets standard security headers; `express-rate-limit` throttles both general API traffic and (more strictly) auth endpoints specifically, mitigating A07 (Identification and Authentication Failures) via brute-force/credential-stuffing.
-- Server-side input validation (`express-validator`) on every write endpoint mitigates A03 (Injection) at the application layer, in addition to parameterized queries via `mysql2`, which prevent SQL injection at the database layer.
-
-**2. Software Quality (QA/Testing)**
-- A Jest + Supertest suite (`backend/tests/`) covers input validation, JWT auth middleware (including role gating), ticket code generation, and booking business logic — specifically duplicate-booking prevention, capacity enforcement, and cancellation with seat release. Run with `npm test`.
-- Tests use mocked models (`jest.mock`) rather than a live database, so the suite runs deterministically in any environment, including CI.
-
-**3. Data & Algorithms**
-- The schema (`migrations/001_init_schema.sql`) is normalized to avoid repeating groups and transitive dependencies: `categories` is factored out of `events` rather than storing a category name directly on each event row, and `bookings` references `events`/`users` by foreign key rather than duplicating event or user data.
-- `migrations/002_add_indexes.sql` adds indexes on foreign keys (`organizer_id`, `category_id`, `event_id`, `user_id`) and the `start_time` sort column used by the event listing query. Without these, event listing (`ORDER BY start_time`) and per-organizer/per-user lookups degrade to full table scans — O(n) per request as the table grows. With the index, MySQL can use an index scan/seek instead of a filesort, keeping these queries close to O(log n + k) where k is the number of matching rows returned.
-
-## Group Members
-
-Computer Science and Engineering (CSE), 5th Year, Section 1
-
-| ID | Name |
-|---|---|
-| UGE/27816/14 | Abenezer Tewodros |
-| UGE/27834/14 | Efa Mirkana Abdisa |
-| UGE/27638/14 | Machir Tadesse Woldemariam |
-| UGE/27831/14 | Musbha Rida |
-| UGE/27830/14 | Samii Girmaa |
-| UGE/27827/14 | Seid Jemal |
-
-**Database**
-- MySQL — see `backend/migrations/001_init_schema.sql`
+We took color inspiration from the ASTU logo, which uses **green and blue**. The interface uses a dark theme with glassmorphism cards, glowing accents, and smooth animations to give it a modern, premium feel. The design is fully responsive and works on mobile, tablet, and desktop.
 
 ## Project Structure
 
 ```
-campus-event-ticket-booking/
-├── backend/
-│   ├── src/
-│   │   ├── config/        # DB connection
-│   │   ├── controllers/   # Route handler logic
-│   │   ├── middleware/    # Auth middleware
-│   │   ├── models/        # DB queries
-│   │   ├── routes/        # Express routers
-│   │   └── server.js      # App entry point
-│   ├── migrations/        # SQL schema
-│   └── .env.example
-└── frontend/
-    ├── src/
-    │   ├── api/            # Axios client
-    │   ├── components/     # Shared UI components
-    │   └── pages/          # Route-level pages
-    └── index.html
+src/
+├── components/       # Reusable UI components (Navbar, Footer, EventCard, Modal, Loader)
+├── context/          # Auth context provider
+├── lib/               # Supabase client setup
+├── pages/             # Page components (Home, EventDetail, MyTickets, SignIn, SignUp, Profile, Admin)
+├── types/             # TypeScript type definitions
+├── App.tsx            # Main app with routing
+├── main.tsx           # Entry point
+└── index.css          # Global styles + Tailwind
 ```
+
+## Database Schema
+
+Our database has four tables:
+
+1. **profiles** — Extends Supabase's built-in auth.users with full name, role (student/admin), student ID, department, and phone.
+2. **events** — Campus events with title, description, date, venue, capacity, available seats, price, image, category, and status.
+3. **bookings** — Ticket bookings linking a user to an event, with seat number, booking code, and check-in status.
+4. **waitlist** — Waitlist entries for sold-out events.
+
+All tables have Row Level Security (RLS) enabled:
+- Anyone can browse events (no login required).
+- Students can only see and manage their own bookings.
+- Admins can manage all events and view all bookings.
 
 ## Getting Started
 
-### Backend
+### Prerequisites
+
+- Node.js 18 or higher
+- npm
+
+### Installation
 
 ```bash
-cd backend
-cp .env.example .env   # fill in your MySQL credentials
+# Clone the repository
+git clone https://github.com/IamMachir/campus-event-ticket-booking.git
+cd campus-event-ticket-booking
+
+# Install dependencies
 npm install
-mysql -u root -p < migrations/001_init_schema.sql
+
+# Start the development server
 npm run dev
 ```
 
-### Seed demo data (optional but recommended for demos)
+The app will be available at `http://localhost:5173`.
 
-```bash
-cd backend
-npm run seed
+### Environment Variables
+
+The project uses Supabase for the backend. The connection details are already configured in the `.env` file:
+
+```
+VITE_SUPABASE_URL=<your-supabase-url>
+VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
-This creates a demo organizer (`organizer@demo.campus.edu` / `demo1234`), a demo student (`student@demo.campus.edu` / `demo1234`), three sample events across different categories, and a couple of sample bookings — so the app isn't empty the first time you open it. Safe to re-run.
+### Available Scripts
 
-### Run tests
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start the development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview the production build |
+| `npm run typecheck` | Run TypeScript type checking |
+| `npm run lint` | Run ESLint |
 
-```bash
-cd backend
-npm test
-```
+## How to Use
 
-Covers input validation rules, JWT auth middleware, ticket code generation, and booking controller logic (duplicate-booking prevention, capacity checks, cancellation) using Jest with mocked models — no database connection required to run the suite.
+### As a Student
 
-### Frontend
+1. Visit the home page to browse upcoming events.
+2. Filter by category or search for a specific event.
+3. Click on an event to see full details.
+4. Sign up or sign in to book a seat.
+5. Choose a seat number and confirm your booking.
+6. View your tickets under "My Tickets" and cancel if needed.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### As an Admin
 
-The frontend expects the backend at `http://localhost:5000/api` (configurable via `VITE_API_URL`).
+1. Sign in with an admin account.
+2. Go to the Admin dashboard from the navigation bar.
+3. Create new events, edit existing ones, or change event status.
+4. View booking statistics on the dashboard.
 
-## Deployment
+## Group Members
 
-- **Backend**: `render.yaml` is included for one-click deployment on [Render](https://render.com) — connect the repo, Render reads the blueprint, and you'll be prompted for your MySQL credentials as environment variables (marked `sync: false`). Railway works similarly if you prefer it.
-- **Database**: A managed MySQL instance on Railway, PlanetScale, or Render's own MySQL add-on. Run the migration (`migrations/001_init_schema.sql`) once against it, then optionally `npm run seed`.
-- **Frontend**: Deploy the `frontend/` folder to Vercel or Netlify. Set `VITE_API_URL` to your deployed backend's `/api` URL, and make sure the backend's CORS config allows your frontend's domain.
+- Machir (Team Lead)
+- [Add other group member names here]
 
-## Demo Script (for your defense)
+## What We Learned
 
-1. Open the app as a guest — browse the seeded events on the home page.
-2. Log in as the demo student (`student@demo.campus.edu` / `demo1234`) and show an existing booking with its QR ticket under "My Bookings".
-3. Log in as the demo organizer (`organizer@demo.campus.edu` / `demo1234`) and create a new event via "Create Event".
-4. Book a seat as the student on the new event, showing the seat counter decrease and the QR code generated.
-5. Go to "Check-In" as the organizer and scan (or manually enter) the ticket code to demonstrate check-in.
-6. Cancel a booking from "My Bookings" to show the seat being released back.
+- Designing a normalized relational database schema with proper foreign keys and constraints.
+- Implementing Row Level Security policies for multi-role access control.
+- Building a responsive React frontend with TypeScript type safety.
+- Creating a clean, modern UI with Tailwind CSS and thoughtful animations.
+- Managing user authentication flows with Supabase Auth.
 
-## Core Features
+## Future Improvements
 
-- [x] User registration & login (JWT-based)
-- [x] Event listing, detail, create/edit/delete (organizer-owned)
-- [x] Ticket booking with QR code generation
-- [x] Booking cancellation with seat release
-- [x] Duplicate-booking prevention
-- [x] Organizer check-in via QR scanner (with manual code fallback)
-- [x] Route guards on authenticated pages
-- [x] Server-side input validation on all write endpoints
-- [x] Responsive layout + loading states
-- [x] Seed script for demo data
-- [ ] Email notifications on booking
-- [ ] Organizer analytics dashboard (bookings per event, check-in rate)
+- Email notifications when booking is confirmed or event is cancelled.
+- QR code generation for ticket verification at the door.
+- Admin check-in system to mark attendees as present.
+- Waitlist auto-promotion when seats become available.
+- Event calendar view for better date navigation.
+- Mobile app version using React Native.
 
-## Status
+## License
 
-Feature-complete for a capstone MVP: schema, auth, full event/booking lifecycle, QR check-in, validation, and responsive UI are all in place, with seed data and a deployment blueprint ready for hosting. Analytics and notifications are noted as future work.
-
+This project was created for academic purposes as part of a course requirement at Adama Science and Technology University.
