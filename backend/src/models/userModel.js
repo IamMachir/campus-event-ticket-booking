@@ -83,6 +83,11 @@ async function updateUserRole(id, role) {
   return result.affectedRows > 0;
 }
 
+async function deleteUser(id) {
+  const [result] = await db.query('DELETE FROM users WHERE id = ?', [id]);
+  return result.affectedRows > 0;
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
@@ -95,4 +100,5 @@ module.exports = {
   markResetTokenUsed,
   listUsers,
   updateUserRole,
+  deleteUser,
 };

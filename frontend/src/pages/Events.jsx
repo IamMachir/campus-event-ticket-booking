@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Users, Sparkles, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Sparkles, ArrowDown, CheckCircle2 } from 'lucide-react';
 import api from '../api/client';
 import Spinner from '../components/Spinner';
 
@@ -8,6 +8,7 @@ export default function Events() {
   const [events, setEvents] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [bookedEventIds, setBookedEventIds] = useState(() => new Set());
 
   useEffect(() => {
     api
@@ -16,6 +17,19 @@ export default function Events() {
       .catch(() => setError('Could not load events. Is the backend running?'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return;
+    api.get('/bookings/me')
+      .then((res) => setBookedEventIds(new Set(
+        res.data.filter((booking) => booking.status !== 'cancelled').map((booking) => booking.event_id),
+      )))
+      .catch(() => {});
+  }, []);
+
+  function scrollToUpcoming() {
+    document.getElementById('upcoming-events')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
     <div>
@@ -35,10 +49,13 @@ export default function Events() {
           <p className="text-slate-400 text-lg max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '0.1s' }}>
             Browse upcoming events, reserve your seat, and get your digital ticket with QR code for check-in.
           </p>
+          <button type="button" onClick={scrollToUpcoming} className="mt-8 inline-flex items-center gap-2 rounded-full border border-astu-400/30 px-5 py-2.5 text-sm font-medium text-astu-300 hover:bg-astu-500/10 transition-colors">
+            Explore upcoming events <ArrowDown className="w-4 h-4" />
+          </button>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <section id="upcoming-events" className="scroll-mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <h2 className="font-display font-bold text-2xl text-slate-100 mb-6">
           Upcoming <span className="text-gradient">Events</span>
         </h2>
@@ -79,6 +96,13 @@ export default function Events() {
                       {isFull && (
                         <div className="absolute top-3 right-3">
                           <span className="text-xs font-bold px-3 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-400/30">SOLD OUT</span>
+                        </div>
+                      )}
+                      {bookedEventIds.has(event.id) && (
+                        <div className="absolute top-3 right-3">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full bg-astuGreen-500/20 text-astuGreen-300 border border-astuGreen-400/30">
+                            <CheckCircle2 className="w-3 h-3" /> BOOKED
+                          </span>
                         </div>
                       )}
                     </div>

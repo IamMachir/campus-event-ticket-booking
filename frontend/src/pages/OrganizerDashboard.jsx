@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { BarChart3, TrendingUp, Users, CheckCircle2 } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, CheckCircle2, Calendar, MapPin, Clock, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../api/client';
 import Spinner from '../components/Spinner';
 
@@ -8,10 +9,14 @@ export default function OrganizerDashboard() {
   const [stats, setStats] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [myEvents, setMyEvents] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    api.get('/events/organizer/stats').then((res) => setStats(res.data))
-      .catch(() => setError('Could not load your event stats.'))
+    Promise.all([
+      api.get('/events/organizer/stats').then((res) => setStats(res.data)),
+      api.get('/events/organizer/mine').then((res) => setMyEvents(res.data)),
+    ]).catch(() => setError('Could not load your organizer data.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -33,7 +38,43 @@ export default function OrganizerDashboard() {
 
       {error && <div className="glass-card p-4 border-red-400/30 mb-4"><p className="text-red-400 text-sm">{error}</p></div>}
 
-      {loading ? <Spinner label="Loading stats..." /> : stats.length === 0 && !error ? (
+      <div className="flex items-center gap-2 border-b border-white/10 mb-6 overflow-x-auto">
+        {[
+          ['overview', 'Overview', BarChart3],
+          ['events', 'My Events', Calendar],
+        ].map(([key, label, Icon]) => (
+          <button key={key} type="button" onClick={() => setActiveTab(key)}
+            className={`inline-flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === key ? 'border-astu-400 text-astu-300' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
+            <Icon className="w-4 h-4" /> {label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? <Spinner label="Loading organizer data..." /> : activeTab === 'events' ? (
+        myEvents.length === 0 ? (
+          <div className="text-center py-20">
+            <Calendar className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-400 mb-4">You haven't created any events yet.</p>
+            <Link to="/events/new" className="inline-flex items-center gap-2 text-astu-400 hover:text-astu-300"><Plus className="w-4 h-4" /> Create your first event</Link>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {myEvents.map((event) => (
+              <Link key={event.id} to={`/events/${event.id}`} className="glass-card p-5 hover:border-astu-400/30 transition-colors">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-astu-500/10 flex items-center justify-center shrink-0"><Calendar className="w-5 h-5 text-astu-400" /></div>
+                  <div className="min-w-0">
+                    <h3 className="font-display font-semibold text-slate-100 truncate">{event.title}</h3>
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(event.start_time).toLocaleString()}</p>
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> {event.location || 'Location to be announced'}</p>
+                    <p className="text-xs text-astuGreen-300 mt-3">{event.seats_booked} of {event.capacity} seats booked</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )
+      ) : stats.length === 0 && !error ? (
         <div className="text-center py-20">
           <BarChart3 className="w-12 h-12 text-slate-600 mx-auto mb-4" />
           <p className="text-slate-400">You haven't created any events yet.</p>

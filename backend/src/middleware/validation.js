@@ -1,6 +1,18 @@
 const { body, validationResult } = require('express-validator');
 const { PUBLIC_ROLES, ALL_ROLES } = require('../constants/roles');
 
+const STRONG_PASSWORD_MESSAGE =
+  'Password must be at least 8 characters and include uppercase, lowercase, number, and special character';
+
+function isStrongPassword(value) {
+  return typeof value === 'string'
+    && value.length >= 8
+    && /[a-z]/.test(value)
+    && /[A-Z]/.test(value)
+    && /\d/.test(value)
+    && /[^A-Za-z0-9]/.test(value);
+}
+
 // Runs after a set of express-validator rules; returns 400 with details if any failed
 function handleValidation(req, res, next) {
   const errors = validationResult(req);
@@ -15,7 +27,7 @@ function handleValidation(req, res, next) {
 const registerRules = [
   body('fullName').trim().isLength({ min: 2, max: 150 }).withMessage('Full name must be 2-150 characters'),
   body('email').isEmail().withMessage('A valid email is required').normalizeEmail(),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password').custom(isStrongPassword).withMessage(STRONG_PASSWORD_MESSAGE),
   body('role').optional().isIn(PUBLIC_ROLES).withMessage('Role must be student or organizer'),
 ];
 
@@ -26,12 +38,18 @@ const loginRules = [
 
 const updateProfileRules = [
   body('fullName').optional().trim().isLength({ min: 2, max: 150 }).withMessage('Full name must be 2-150 characters'),
-  body('profileImage').optional({ checkFalsy: true }).isURL().withMessage('Profile image must be a valid URL'),
+  body('profileImage')
+    .optional({ checkFalsy: true })
+    .custom((value) => (
+      (typeof value === 'string' && value.length <= 2_000_000)
+      && (/^data:image\/(png|jpe?g|gif|webp);base64,/i.test(value) || /^https?:\/\//i.test(value))
+    ))
+    .withMessage('Profile image must be a valid HTTP image URL or image file'),
 ];
 
 const changePasswordRules = [
   body('currentPassword').notEmpty().withMessage('Current password is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+  body('newPassword').custom(isStrongPassword).withMessage(`New ${STRONG_PASSWORD_MESSAGE.toLowerCase()}`),
   body('confirmPassword').notEmpty().withMessage('Password confirmation is required'),
 ];
 
@@ -41,7 +59,7 @@ const forgotPasswordRules = [
 
 const resetPasswordRules = [
   body('token').notEmpty().withMessage('Reset token is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+  body('newPassword').custom(isStrongPassword).withMessage(`New ${STRONG_PASSWORD_MESSAGE.toLowerCase()}`),
   body('confirmPassword').notEmpty().withMessage('Password confirmation is required'),
 ];
 
@@ -72,4 +90,6 @@ module.exports = {
   updateUserRoleRules,
   eventRules,
   bookingRules,
+  STRONG_PASSWORD_MESSAGE,
+  isStrongPassword,
 };

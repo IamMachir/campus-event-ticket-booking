@@ -117,13 +117,7 @@ npm install
 npm run seed
 ```
 
-The seed script creates a demo admin, a demo organizer, a demo student, three sample events, and a couple of sample bookings.
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@demo.campus.edu | admin1234 |
-| Organizer | organizer@demo.campus.edu | demo1234 |
-| Student | student@demo.campus.edu | demo1234 |
+The seed script creates a demo admin, a demo organizer, a demo student, twenty sample events, and a couple of sample bookings. Demo login credentials are intentionally not stored in this README; `npm run seed` prints them to the terminal after a successful seed.
 
 ### Step 5: Start the backend server
 
@@ -242,7 +236,7 @@ npm test
 - User registration & login (JWT-based)
 - Event listing, detail, create/edit/delete (organizer-owned)
 - Ticket booking with QR code generation
-- QR ticket download as PNG image
+- QR ticket download as a PNG named after the event, plus separate ticket-code text download
 - Booking cancellation with seat release
 - Duplicate-booking prevention
 - Organizer check-in via QR scanner (with manual code fallback)
@@ -252,7 +246,7 @@ npm test
 - Server-side input validation on all write endpoints
 - Responsive layout + loading states
 - Seed script for demo data
-- Organizer analytics dashboard (bookings per event, check-in rate)
+- Organizer analytics dashboard (bookings per event, check-in rate) with a My Events view
 - Dark theme UI with ASTU blue/green color scheme and glow effects
 
 ## How to Use

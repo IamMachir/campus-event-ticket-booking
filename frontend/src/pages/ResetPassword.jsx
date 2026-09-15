@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, AlertTriangle, CheckCircle2, ArrowLeft } from 'lucide-react';
 import api from '../api/client';
+import PasswordField from '../components/PasswordField';
+import PasswordStrength, { isStrongPassword } from '../components/PasswordStrength';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -17,8 +19,8 @@ export default function ResetPassword() {
   async function handleSubmit(e) {
     e.preventDefault();
     setMessage('');
-    if (form.newPassword.length < 6) {
-      setMessage('Password must be at least 6 characters');
+    if (!isStrongPassword(form.newPassword)) {
+      setMessage('Choose a stronger password with uppercase, lowercase, number, and special character');
       setIsError(true);
       return;
     }
@@ -45,8 +47,6 @@ export default function ResetPassword() {
       setLoading(false);
     }
   }
-
-  const inputClass = 'w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-500 focus:border-astu-400/40 focus:outline-none transition-colors';
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 pt-20">
@@ -88,24 +88,13 @@ export default function ResetPassword() {
 
               {!done && (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">New password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input type="password" required placeholder="At least 6 characters" value={form.newPassword}
-                        onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
-                        className={inputClass} />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm new password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input type="password" required placeholder="Repeat your new password" value={form.confirmPassword}
-                        onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                        className={inputClass} />
-                    </div>
-                  </div>
+                  <PasswordField label="New password" placeholder="Create a strong password" value={form.newPassword}
+                    onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+                    autoComplete="new-password" />
+                  <PasswordStrength password={form.newPassword} />
+                  <PasswordField label="Confirm new password" placeholder="Repeat your new password" value={form.confirmPassword}
+                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    autoComplete="new-password" />
                   <button type="submit" disabled={loading}
                     className="w-full glow-btn bg-gradient-to-r from-astu-500 to-astuGreen-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-astu-500/30 transition-all disabled:opacity-50">
                     {loading ? 'Resetting...' : 'Reset password'}

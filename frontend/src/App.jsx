@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
+import ChangePassword from './pages/ChangePassword';
 import Bookings from './pages/Bookings';
 import CreateEvent from './pages/CreateEvent';
 import EventDetail from './pages/EventDetail';
@@ -65,6 +66,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              <PrivateRoute>
+                <ChangePassword />
               </PrivateRoute>
             }
           />

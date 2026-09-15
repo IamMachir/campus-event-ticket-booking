@@ -1,6 +1,7 @@
 const {
   createEvent,
   getAllEvents,
+  getEventsByOrganizer,
   getEventById,
   updateEvent,
   deleteEvent,
@@ -23,6 +24,15 @@ async function getEvent(req, res) {
     res.json(event);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch event', details: err.message });
+  }
+}
+
+async function listOrganizerEvents(req, res) {
+  try {
+    const events = await getEventsByOrganizer(req.user.id);
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch your events', details: err.message });
   }
 }
 
@@ -100,4 +110,4 @@ async function organizerStats(req, res) {
   }
 }
 
-module.exports = { listEvents, getEvent, addEvent, editEvent, removeEvent, organizerStats };
+module.exports = { listEvents, listOrganizerEvents, getEvent, addEvent, editEvent, removeEvent, organizerStats };

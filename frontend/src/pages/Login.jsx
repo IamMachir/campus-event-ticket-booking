@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, AlertCircle, GraduationCap } from 'lucide-react';
+import { Mail, ArrowRight, AlertCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import PasswordField from '../components/PasswordField';
 
 export default function Login() {
   const { login } = useAuth();
@@ -60,17 +61,18 @@ export default function Login() {
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-slate-300">Password</label>
-                <Link to="/forgot-password" className="text-xs text-slate-400 hover:text-astu-400 transition-colors">
+                <span className="sr-only">Password</span>
+                <Link to="/forgot-password" className="ml-auto text-xs text-slate-400 hover:text-astu-400 transition-colors">
                   Forgot password?
                 </Link>
               </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input type="password" required placeholder="........" value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-500 focus:border-astu-400/40 focus:outline-none transition-colors" />
-              </div>
+              <PasswordField
+                label="Password"
+                placeholder="........"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                autoComplete="current-password"
+              />
             </div>
             <button type="submit" disabled={loading}
               className="w-full glow-btn bg-gradient-to-r from-astu-500 to-astuGreen-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-astu-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2">

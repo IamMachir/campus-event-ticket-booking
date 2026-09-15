@@ -155,6 +155,28 @@ async function changePassword(req, res) {
   }
 }
 
+/** Permanently removes the authenticated account and its dependent records. */
+async function deleteAccount(req, res) {
+  try {
+    const { currentPassword } = req.body;
+    if (!currentPassword) {
+      return res.status(400).json({ error: 'Current password is required' });
+    }
+
+    const user = await userModel.findUserByEmail(req.user.email);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const match = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!match) return res.status(401).json({ error: 'Current password is incorrect' });
+
+    await userModel.deleteUser(user.id);
+    res.json({ message: 'Account deleted successfully' });
+  } catch (err) {
+    console.error('Failed to delete account:', err.message);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+}
+
 /**
  * Requests a password reset. Always returns the same generic response
  * whether or not the email exists. If it does: previous tokens are
@@ -264,6 +286,7 @@ module.exports = {
   getMe,
   updateProfile,
   changePassword,
+  deleteAccount,
   forgotPassword,
   resetPassword,
   listUsers,

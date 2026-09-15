@@ -28,6 +28,18 @@ async function getAllEvents() {
   return rows;
 }
 
+async function getEventsByOrganizer(organizerId) {
+  const [rows] = await db.query(
+    `SELECT e.*, c.name AS category_name
+     FROM events e
+     LEFT JOIN categories c ON e.category_id = c.id
+     WHERE e.organizer_id = ?
+     ORDER BY e.start_time ASC`,
+    [organizerId]
+  );
+  return rows;
+}
+
 async function getEventById(id) {
   const [rows] = await db.query('SELECT * FROM events WHERE id = ?', [id]);
   return rows[0] || null;
@@ -85,6 +97,7 @@ async function getOrganizerStats(organizerId) {
 module.exports = {
   createEvent,
   getAllEvents,
+  getEventsByOrganizer,
   getEventById,
   incrementSeatsBooked,
   decrementSeatsBooked,

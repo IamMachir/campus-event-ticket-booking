@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Users, ArrowLeft, Ticket, CheckCircle2, AlertCircle, Download } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, ArrowLeft, Ticket, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../api/client';
 import QrTicket from '../components/QrTicket';
 import Spinner from '../components/Spinner';
@@ -18,9 +18,10 @@ export default function EventDetail() {
   }, [id]);
 
   useEffect(() => {
+    if (!localStorage.getItem('token')) return;
     api.get('/bookings/me').then((res) => {
       const existing = res.data.find((b) => b.event_id === Number(id) && b.status !== 'cancelled');
-      if (existing) setTicket({ ticketCode: existing.ticket_code, qrCode: null });
+      if (existing) setTicket({ ticketCode: existing.ticket_code, qrCode: existing.qr_code });
     }).catch(() => {});
   }, [id]);
 
@@ -45,14 +46,6 @@ export default function EventDetail() {
     } finally {
       setBooking(false);
     }
-  }
-
-  function downloadQr() {
-    if (!ticket.qrCode) return;
-    const link = document.createElement('a');
-    link.href = ticket.qrCode;
-    link.download = `ticket-${ticket.ticketCode}.png`;
-    link.click();
   }
 
   if (error && !event) {
@@ -112,13 +105,7 @@ export default function EventDetail() {
             <CheckCircle2 className="w-5 h-5" />
             <span className="font-medium">You're booked for this event!</span>
           </div>
-          <QrTicket qrCode={ticket.qrCode} ticketCode={ticket.ticketCode} />
-          {ticket.qrCode && (
-            <button onClick={downloadQr}
-              className="mt-4 w-full flex items-center justify-center gap-2 text-astu-400 border border-astu-400/30 rounded-xl px-5 py-2.5 hover:bg-astu-500/10 transition-all text-sm font-medium">
-              <Download className="w-4 h-4" /> Download QR Ticket
-            </button>
-          )}
+          <QrTicket qrCode={ticket.qrCode} ticketCode={ticket.ticketCode} eventTitle={event.title} />
         </div>
       ) : (
         <button

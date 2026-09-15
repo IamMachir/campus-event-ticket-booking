@@ -71,6 +71,9 @@ async function bookEvent(req, res) {
 async function myBookings(req, res) {
   try {
     const bookings = await getBookingsByUser(req.user.id);
+    await Promise.all(bookings.map(async (booking) => {
+      booking.qr_code = await QRCode.toDataURL(booking.ticket_code);
+    }));
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch bookings', details: err.message });
@@ -104,7 +107,16 @@ async function checkIn(req, res) {
 
     if (!booking) return res.status(404).json({ error: 'Ticket not found' });
     if (booking.status === 'checked_in') {
-      return res.status(400).json({ error: 'Ticket already checked in' });
+      return res.status(409).json({
+        error: 'FRAUD ALERT: This ticket has already been used and cannot be scanned again.',
+        fraud: true,
+      });
+    }
+    if (booking.status === 'cancelled') {
+      return res.status(409).json({
+        error: 'FRAUD ALERT: This ticket was cancelled and is not valid for entry.',
+        fraud: true,
+      });
     }
 
     await markCheckedIn(ticketCode);

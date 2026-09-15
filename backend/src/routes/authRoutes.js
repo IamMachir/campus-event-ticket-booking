@@ -25,6 +25,7 @@ router.post('/logout', requireAuth, authController.logout);
 router.get('/me', requireAuth, authController.getMe);
 router.put('/me', requireAuth, updateProfileRules, handleValidation, authController.updateProfile);
 router.post('/me/password', requireAuth, changePasswordRules, handleValidation, authController.changePassword);
+router.delete('/me', requireAuth, authController.deleteAccount);
 
 // Admin only
 router.get('/users', requireAuth, requireRole(ROLES.ADMIN), authController.listUsers);

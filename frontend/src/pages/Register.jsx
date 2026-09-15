@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User as UserIcon, ArrowRight, AlertCircle, CheckCircle2, GraduationCap } from 'lucide-react';
+import { Mail, User as UserIcon, ArrowRight, AlertCircle, CheckCircle2, GraduationCap } from 'lucide-react';
 import api from '../api/client';
 import { PUBLIC_ROLES, ROLE_LABELS } from '../constants/roles';
+import PasswordField from '../components/PasswordField';
+import PasswordStrength, { isStrongPassword } from '../components/PasswordStrength';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -18,7 +20,7 @@ export default function Register() {
     if (form.fullName.trim().length < 2) return 'Full name must be at least 2 characters';
     if (!form.email) return 'Email is required';
     if (!EMAIL_RE.test(form.email)) return 'Please enter a valid email address';
-    if (form.password.length < 6) return 'Password must be at least 6 characters';
+    if (!isStrongPassword(form.password)) return 'Choose a stronger password with uppercase, lowercase, number, and special character';
     if (form.password !== form.confirmPassword) return 'Passwords do not match';
     return null;
   }
@@ -98,24 +100,21 @@ export default function Register() {
                   className={inputClass} />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input type="password" required placeholder="At least 6 characters" value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className={inputClass} />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input type="password" required placeholder="Repeat your password" value={form.confirmPassword}
-                  onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                  className={inputClass} />
-              </div>
-            </div>
+            <PasswordField
+              label="Password"
+              placeholder="Create a strong password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              autoComplete="new-password"
+            />
+            <PasswordStrength password={form.password} />
+            <PasswordField
+              label="Confirm password"
+              placeholder="Repeat your password"
+              value={form.confirmPassword}
+              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              autoComplete="new-password"
+            />
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">I am a</label>
               <div className="grid grid-cols-2 gap-3">

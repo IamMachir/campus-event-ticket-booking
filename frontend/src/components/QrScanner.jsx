@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 
-export default function QrScanner({ onScan }) {
+export default function QrScanner({ onScan, onError }) {
   const containerId = 'qr-scanner-region';
   const scannerRef = useRef(null);
   const lastScanRef = useRef(0);
@@ -10,7 +10,6 @@ export default function QrScanner({ onScan }) {
   useEffect(() => { onScanRef.current = onScan; }, [onScan]);
 
   useEffect(() => {
-    let mounted = true;
     const scanner = new Html5Qrcode(containerId);
     scannerRef.current = scanner;
 
@@ -26,10 +25,11 @@ export default function QrScanner({ onScan }) {
         },
         () => {}
       )
-      .catch(() => {});
+      .catch(() => {
+        onError?.('Camera access was unavailable. Allow camera permission or use manual ticket entry.');
+      });
 
     return () => {
-      mounted = false;
       if (scannerRef.current) {
         const s = scannerRef.current;
         scannerRef.current = null;

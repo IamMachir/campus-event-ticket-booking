@@ -1,8 +1,32 @@
-export default function QrTicket({ qrCode, ticketCode }) {
+import { Download, FileText } from 'lucide-react';
+
+function safeFileName(value) {
+  return (value || 'campus-event').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+}
+
+export default function QrTicket({ qrCode, ticketCode, eventTitle = 'campus-event', compact = false }) {
   if (!qrCode && !ticketCode) return null;
 
+  function downloadQr() {
+    if (!qrCode) return;
+    const link = document.createElement('a');
+    link.href = qrCode;
+    link.download = `${safeFileName(eventTitle)}-ticket.png`;
+    link.click();
+  }
+
+  function downloadCode() {
+    if (!ticketCode) return;
+    const blob = new Blob([`${eventTitle}\nTicket code: ${ticketCode}\n`], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${safeFileName(eventTitle)}-ticket-code.txt`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
   return (
-    <div className="glass-card p-6 flex flex-col items-center gap-4 border-astuGreen-400/30">
+    <div className={`glass-card ${compact ? 'p-4' : 'p-6'} flex flex-col items-center gap-4 border-astuGreen-400/30`}>
       {qrCode && (
         <div className="relative">
           <div className="absolute inset-0 bg-astuGreen-500/20 blur-xl rounded-2xl"></div>
@@ -15,6 +39,18 @@ export default function QrTicket({ qrCode, ticketCode }) {
           <p className="font-mono text-lg tracking-wider text-astu-400 font-bold glow-text">{ticketCode}</p>
         </div>
       )}
+      <div className="flex flex-wrap justify-center gap-2">
+        {qrCode && (
+          <button type="button" onClick={downloadQr} className="inline-flex items-center gap-1.5 text-xs text-astu-300 border border-astu-400/30 rounded-lg px-3 py-2 hover:bg-astu-500/10 transition-colors">
+            <Download className="w-3.5 h-3.5" /> Download QR
+          </button>
+        )}
+        {ticketCode && (
+          <button type="button" onClick={downloadCode} className="inline-flex items-center gap-1.5 text-xs text-slate-300 border border-white/10 rounded-lg px-3 py-2 hover:bg-white/5 transition-colors">
+            <FileText className="w-3.5 h-3.5" /> Download code
+          </button>
+        )}
+      </div>
     </div>
   );
 }
