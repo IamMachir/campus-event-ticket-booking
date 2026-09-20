@@ -2,6 +2,86 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../config/db');
 
+function splitSqlStatements(sql) {
+  const statements = [];
+  let statement = '';
+  let quote = null;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let index = 0; index < sql.length; index += 1) {
+    const character = sql[index];
+    const nextCharacter = sql[index + 1];
+
+    if (lineComment) {
+      statement += character;
+      if (character === '\n') lineComment = false;
+      continue;
+    }
+
+    if (blockComment) {
+      statement += character;
+      if (character === '*' && nextCharacter === '/') {
+        statement += nextCharacter;
+        index += 1;
+        blockComment = false;
+      }
+      continue;
+    }
+
+    if (quote) {
+      statement += character;
+      if (character === '\\' && nextCharacter) {
+        statement += nextCharacter;
+        index += 1;
+      } else if (character === quote) {
+        if (nextCharacter === quote) {
+          statement += nextCharacter;
+          index += 1;
+        } else {
+          quote = null;
+        }
+      }
+      continue;
+    }
+
+    if ((character === '-' && nextCharacter === '-' && /\s/.test(sql[index + 2] || ''))
+      || character === '#') {
+      statement += character;
+      if (character === '-') {
+        statement += nextCharacter;
+        index += 1;
+      }
+      lineComment = true;
+      continue;
+    }
+
+    if (character === '/' && nextCharacter === '*') {
+      statement += character + nextCharacter;
+      index += 1;
+      blockComment = true;
+      continue;
+    }
+
+    if (character === '\'' || character === '"' || character === '`') {
+      quote = character;
+      statement += character;
+      continue;
+    }
+
+    if (character === ';') {
+      if (statement.trim()) statements.push(statement.trim());
+      statement = '';
+      continue;
+    }
+
+    statement += character;
+  }
+
+  if (statement.trim()) statements.push(statement.trim());
+  return statements;
+}
+
 /**
  * Runs all .sql migration files in order on server startup.
  * Tracks applied migrations in a `_migrations` table so each only runs once.
@@ -25,7 +105,7 @@ async function runMigrations() {
   for (const file of files) {
     if (appliedSet.has(file)) continue;
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-    const statements = sql.split(';').map((s) => s.trim()).filter(Boolean);
+    const statements = splitSqlStatements(sql);
     for (const stmt of statements) {
       await db.query(stmt);
     }
@@ -34,4 +114,4 @@ async function runMigrations() {
   }
 }
 
-module.exports = { runMigrations };
+module.exports = { runMigrations, splitSqlStatements };
