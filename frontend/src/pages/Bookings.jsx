@@ -101,7 +101,7 @@ export default function Bookings() {
                     </div>
                     {expanded && (
                       <div className="mt-5 pt-5 border-t border-white/10" onClick={(event) => event.stopPropagation()}>
-                        <QrTicket qrCode={booking.qr_code} ticketCode={booking.ticket_code} eventTitle={booking.title} compact />
+                        <QrTicket qrCode={booking.qr_code} ticketCode={booking.ticket_code} status={booking.status} eventTitle={booking.title} compact />
                       </div>
                     )}
                   </div>
