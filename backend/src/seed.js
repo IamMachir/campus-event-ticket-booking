@@ -83,12 +83,14 @@ async function seed() {
     role: 'admin',
   });
 
-  const academicTechCategoryId = await upsertCategory('Academic & Tech');
-  const careerCategoryId = await upsertCategory('Career & Professional Development');
-  const studentLifeCategoryId = await upsertCategory('Student Life & Entertainment');
-  const sportsCategoryId = await upsertCategory('Sports & Recreation');
-  const innovationCategoryId = await upsertCategory('Innovation & Coding');
-  const healthCategoryId = await upsertCategory('Health & Community Service');
+  const academicTechCategoryId = await upsertCategory('Education');
+  const careerCategoryId = await upsertCategory('Business');
+  const studentLifeCategoryId = await upsertCategory('Entertainment');
+  const sportsCategoryId = await upsertCategory('Sports');
+  const innovationCategoryId = await upsertCategory('Technology');
+  const healthCategoryId = await upsertCategory('Clubs');
+  await upsertCategory('Music');
+  await upsertCategory('Workshops');
 
   const event1 = await insertEventIfMissing({
     title: 'ASTU Annual Innovation & Robotics Expo',

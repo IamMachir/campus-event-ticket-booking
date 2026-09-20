@@ -72,7 +72,7 @@ const eventRules = [
   body('startTime').isISO8601().withMessage('startTime must be a valid date'),
   body('endTime').optional({ checkFalsy: true }).isISO8601().withMessage('endTime must be a valid date'),
   body('capacity').isInt({ min: 1 }).withMessage('capacity must be a positive integer'),
-  body('categoryId').optional({ checkFalsy: true }).isInt().withMessage('categoryId must be an integer'),
+  body('categoryId').isInt({ min: 1 }).withMessage('categoryId must be a positive integer'),
 ];
 
 const bookingRules = [

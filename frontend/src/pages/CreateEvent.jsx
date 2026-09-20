@@ -1,23 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, AlertCircle, Calendar, MapPin, FileText, Users } from 'lucide-react';
 import api from '../api/client';
 
 export default function CreateEvent() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ title: '', description: '', location: '', startTime: '', endTime: '', capacity: '' });
+  const [form, setForm] = useState({ title: '', description: '', categoryId: '', location: '', startTime: '', endTime: '', capacity: '' });
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    api.get('/events/categories')
+      .then((res) => setCategories(res.data))
+      .catch(() => setError('Could not load event categories.'));
+  }, []);
 
   function update(field, value) { setForm((f) => ({ ...f, [field]: value })); }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    if (!form.title || !form.startTime || !form.capacity) { setError('Title, start time and capacity are required.'); return; }
+    if (!form.title || !form.categoryId || !form.startTime || !form.capacity) { setError('Title, category, start time and capacity are required.'); return; }
     setSubmitting(true);
     try {
-      const res = await api.post('/events', { ...form, capacity: Number(form.capacity) });
+      const res = await api.post('/events', { ...form, categoryId: Number(form.categoryId), capacity: Number(form.capacity) });
       navigate(`/events/${res.data.id}`);
     } catch (err) {
       if (err.response && err.response.status === 401) { navigate('/login'); return; }
@@ -50,6 +57,13 @@ export default function CreateEvent() {
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-1.5"><MapPin className="w-4 h-4 text-astu-400" /> Location</label>
           <input type="text" placeholder="e.g. Main Auditorium" value={form.location} onChange={(e) => update('location', e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Category</label>
+          <select value={form.categoryId} onChange={(e) => update('categoryId', e.target.value)} className={inputClass}>
+            <option value="">Select a category</option>
+            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>

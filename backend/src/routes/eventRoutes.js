@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { listEvents, listOrganizerEvents, getEvent, addEvent, editEvent, removeEvent, organizerStats } = require('../controllers/eventController');
+const { listEvents, listCategories, listOrganizerEvents, getEvent, addEvent, editEvent, removeEvent, organizerStats } = require('../controllers/eventController');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { handleValidation, eventRules } = require('../middleware/validation');
 
 router.get('/', listEvents);
+router.get('/categories', listCategories);
 router.get('/organizer/mine', requireAuth, requireRole('organizer', 'admin'), listOrganizerEvents);
 router.get('/organizer/stats', requireAuth, requireRole('organizer', 'admin'), organizerStats);
 router.get('/:id', getEvent);

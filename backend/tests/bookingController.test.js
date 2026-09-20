@@ -185,7 +185,7 @@ describe('checkIn', () => {
 
     await checkIn(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(409);
   });
 
   it('checks in a valid booked ticket', async () => {

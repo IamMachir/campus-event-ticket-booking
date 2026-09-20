@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { EVENT_CATEGORIES } = require('../constants/eventCategories');
 
 async function createEvent({ title, description, categoryId, organizerId, location, startTime, endTime, capacity }) {
   const [result] = await db.query(
@@ -18,11 +19,90 @@ async function createEvent({ title, description, categoryId, organizerId, locati
   return result.insertId;
 }
 
+async function getCategories() {
+  const placeholders = EVENT_CATEGORIES.map(() => '?').join(', ');
+  const [rows] = await db.query(
+    `SELECT id, name
+     FROM categories
+     WHERE name IN (${placeholders})
+     ORDER BY FIELD(name, ${placeholders})`,
+    [...EVENT_CATEGORIES, ...EVENT_CATEGORIES]
+  );
+  return rows;
+}
+
+async function getCategoryById(id) {
+  const [rows] = await db.query(
+    `SELECT id, name
+     FROM categories
+     WHERE id = ? AND name IN (${EVENT_CATEGORIES.map(() => '?').join(', ')})`,
+    [id, ...EVENT_CATEGORIES]
+  );
+  return rows[0] || null;
+}
+
+function escapeLikePattern(value) {
+  return value.replace(/[\\%_]/g, (character) => `\\${character}`);
+}
+
+async function searchEvents({ search = '', categoryId = null, page = 1, limit = 12 }) {
+  const conditions = [];
+  const params = [];
+  const normalizedSearch = search.trim().toLowerCase();
+
+  if (normalizedSearch) {
+    const pattern = `%${escapeLikePattern(normalizedSearch)}%`;
+    conditions.push(`(
+      LOWER(e.title) LIKE ? ESCAPE '\\\\'
+      OR LOWER(COALESCE(u.full_name, '')) LIKE ? ESCAPE '\\\\'
+      OR LOWER(COALESCE(c.name, '')) LIKE ? ESCAPE '\\\\'
+      OR LOWER(COALESCE(e.location, '')) LIKE ? ESCAPE '\\\\'
+    )`);
+    params.push(pattern, pattern, pattern, pattern);
+  }
+
+  if (categoryId !== null) {
+    conditions.push('e.category_id = ?');
+    params.push(categoryId);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const offset = (page - 1) * limit;
+  const countParams = [...params];
+
+  const [countResult, eventResult] = await Promise.all([
+    db.query(
+      `SELECT COUNT(*) AS total
+       FROM events e
+       LEFT JOIN categories c ON e.category_id = c.id
+       LEFT JOIN users u ON e.organizer_id = u.id
+       ${whereClause}`,
+      countParams
+    ),
+    db.query(
+      `SELECT e.*, c.name AS category_name, u.full_name AS organizer_name
+       FROM events e
+       LEFT JOIN categories c ON e.category_id = c.id
+       LEFT JOIN users u ON e.organizer_id = u.id
+       ${whereClause}
+       ORDER BY e.start_time ASC, e.id ASC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    ),
+  ]);
+
+  return {
+    events: eventResult[0],
+    total: Number(countResult[0][0]?.total || 0),
+  };
+}
+
 async function getAllEvents() {
   const [rows] = await db.query(
-    `SELECT e.*, c.name AS category_name
+    `SELECT e.*, c.name AS category_name, u.full_name AS organizer_name
      FROM events e
      LEFT JOIN categories c ON e.category_id = c.id
+     LEFT JOIN users u ON e.organizer_id = u.id
      ORDER BY e.start_time ASC`
   );
   return rows;
@@ -30,9 +110,10 @@ async function getAllEvents() {
 
 async function getEventsByOrganizer(organizerId) {
   const [rows] = await db.query(
-    `SELECT e.*, c.name AS category_name
+    `SELECT e.*, c.name AS category_name, u.full_name AS organizer_name
      FROM events e
      LEFT JOIN categories c ON e.category_id = c.id
+     LEFT JOIN users u ON e.organizer_id = u.id
      WHERE e.organizer_id = ?
      ORDER BY e.start_time ASC`,
     [organizerId]
@@ -41,7 +122,14 @@ async function getEventsByOrganizer(organizerId) {
 }
 
 async function getEventById(id) {
-  const [rows] = await db.query('SELECT * FROM events WHERE id = ?', [id]);
+  const [rows] = await db.query(
+    `SELECT e.*, c.name AS category_name, u.full_name AS organizer_name
+     FROM events e
+     LEFT JOIN categories c ON e.category_id = c.id
+     LEFT JOIN users u ON e.organizer_id = u.id
+     WHERE e.id = ?`,
+    [id]
+  );
   return rows[0] || null;
 }
 
@@ -96,6 +184,9 @@ async function getOrganizerStats(organizerId) {
 
 module.exports = {
   createEvent,
+  getCategories,
+  getCategoryById,
+  searchEvents,
   getAllEvents,
   getEventsByOrganizer,
   getEventById,

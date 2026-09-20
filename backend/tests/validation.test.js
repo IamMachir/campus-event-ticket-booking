@@ -27,13 +27,13 @@ describe('registerRules', () => {
     const messages = res.body.details.map((d) => d.msg);
     expect(messages).toContain('Full name must be 2-150 characters');
     expect(messages).toContain('A valid email is required');
-    expect(messages).toContain('Password must be at least 6 characters');
+    expect(messages).toContain('Password must be at least 8 characters and include uppercase, lowercase, number, and special character');
   });
 
   it('accepts valid registration data', async () => {
     const res = await request(app)
       .post('/test')
-      .send({ fullName: 'Test User', email: 'test@example.com', password: 'password123' });
+      .send({ fullName: 'Test User', email: 'test@example.com', password: 'Password123!' });
 
     expect(res.status).toBe(200);
   });
@@ -69,6 +69,7 @@ describe('eventRules', () => {
       title: 'Cultural Night',
       startTime: '2026-12-01T18:00:00Z',
       capacity: 100,
+      categoryId: 1,
     });
     expect(res.status).toBe(200);
   });

@@ -1,19 +1,76 @@
 const {
   createEvent,
-  getAllEvents,
+  getCategories,
+  getCategoryById,
+  searchEvents,
   getEventsByOrganizer,
   getEventById,
   updateEvent,
   deleteEvent,
   getOrganizerStats,
 } = require('../models/eventModel');
+const { EVENT_CATEGORIES } = require('../constants/eventCategories');
 
 async function listEvents(req, res) {
   try {
-    const events = await getAllEvents();
-    res.json(events);
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const category = typeof req.query.category === 'string' ? req.query.category.trim() : '';
+    const page = Number.parseInt(req.query.page || '1', 10);
+    const limit = Number.parseInt(req.query.limit || '12', 10);
+
+    if (req.query.search !== undefined && typeof req.query.search !== 'string') {
+      return res.status(400).json({ error: 'search must be a single text value' });
+    }
+    if (search.length > 100) {
+      return res.status(400).json({ error: 'search must be 100 characters or fewer' });
+    }
+    if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1) {
+      return res.status(400).json({ error: 'page and limit must be positive integers' });
+    }
+
+    let categoryId = null;
+    if (category && category.toLowerCase() !== 'all categories' && category.toLowerCase() !== 'all') {
+      if (!EVENT_CATEGORIES.includes(category)) {
+        return res.status(400).json({ error: 'Invalid event category' });
+      }
+      const categoryRecord = await getCategoryByIdOrName(category);
+      if (!categoryRecord) {
+        return res.status(400).json({ error: 'Event category is not available' });
+      }
+      categoryId = categoryRecord.id;
+    }
+
+    const result = await searchEvents({
+      search,
+      categoryId,
+      page,
+      limit: Math.min(limit, 50),
+    });
+
+    res.json({
+      events: result.events,
+      pagination: {
+        page,
+        limit: Math.min(limit, 50),
+        total: result.total,
+        totalPages: Math.ceil(result.total / Math.min(limit, 50)),
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch events', details: err.message });
+  }
+}
+
+async function getCategoryByIdOrName(name) {
+  const categories = await getCategories();
+  return categories.find((category) => category.name === name) || null;
+}
+
+async function listCategories(req, res) {
+  try {
+    res.json(await getCategories());
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch event categories', details: err.message });
   }
 }
 
@@ -41,6 +98,9 @@ async function addEvent(req, res) {
     const { title, description, categoryId, location, startTime, endTime, capacity } = req.body;
     if (!title || !startTime || !capacity) {
       return res.status(400).json({ error: 'title, startTime and capacity are required' });
+    }
+    if (!(await getCategoryById(categoryId))) {
+      return res.status(400).json({ error: 'A valid event category is required' });
     }
 
     const eventId = await createEvent({
@@ -74,6 +134,9 @@ async function editEvent(req, res) {
     const { title, description, categoryId, location, startTime, endTime, capacity } = req.body;
     if (!title || !startTime || !capacity) {
       return res.status(400).json({ error: 'title, startTime and capacity are required' });
+    }
+    if (!(await getCategoryById(categoryId))) {
+      return res.status(400).json({ error: 'A valid event category is required' });
     }
 
     await updateEvent(req.params.id, { title, description, categoryId, location, startTime, endTime, capacity });
@@ -110,4 +173,13 @@ async function organizerStats(req, res) {
   }
 }
 
-module.exports = { listEvents, listOrganizerEvents, getEvent, addEvent, editEvent, removeEvent, organizerStats };
+module.exports = {
+  listEvents,
+  listCategories,
+  listOrganizerEvents,
+  getEvent,
+  addEvent,
+  editEvent,
+  removeEvent,
+  organizerStats,
+};
