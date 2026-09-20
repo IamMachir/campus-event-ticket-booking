@@ -1,0 +1,13 @@
+import { useEffect, useState } from 'react';
+import { Bell, CheckCheck, CalendarCheck, Info, AlertTriangle } from 'lucide-react';
+import api from '../api/client';
+
+function IconFor({ type }) { return type === 'booking' ? <CalendarCheck className="w-5 h-5 text-astuGreen-300" /> : type === 'warning' ? <AlertTriangle className="w-5 h-5 text-amber-300" /> : <Info className="w-5 h-5 text-astu-300" />; }
+export default function Notifications() {
+  const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  function load() { setLoading(true); api.get('/notifications').then((res) => setItems(res.data)).catch(() => setError('Could not load notifications.')).finally(() => setLoading(false)); }
+  useEffect(() => { load(); }, []);
+  async function markAll() { await api.patch('/notifications/read-all'); setItems((current) => current.map((item) => ({ ...item, is_read: 1 }))); }
+  async function markRead(id) { await api.patch('/notifications/' + id + '/read'); setItems((current) => current.map((item) => item.id === id ? { ...item, is_read: 1 } : item)); }
+  return <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 pt-24"><div className="flex items-center justify-between gap-4 mb-6"><div><h1 className="font-display font-bold text-3xl text-slate-100">Notifications</h1><p className="text-sm text-slate-400 mt-1">Booking updates and important ticket reminders.</p></div><button type="button" onClick={markAll} className="inline-flex items-center gap-2 text-sm text-astu-300 hover:text-astu-200"><CheckCheck className="w-4 h-4" /> Mark all read</button></div>{loading ? <p className="text-slate-400">Loading notifications…</p> : error ? <p className="text-red-300">{error}</p> : items.length === 0 ? <div className="glass-card p-10 text-center"><Bell className="w-10 h-10 text-slate-600 mx-auto mb-3" /><p className="text-slate-300">You are all caught up.</p></div> : <div className="space-y-3">{items.map((item) => <button type="button" key={item.id} onClick={() => markRead(item.id)} className={'w-full text-left glass-card p-4 flex gap-3 ' + (!item.is_read ? 'border-astu-400/30 bg-astu-500/5' : '')}><IconFor type={item.type} /><span className="min-w-0"><span className="flex items-center gap-2"><strong className="text-slate-100 text-sm">{item.title}</strong>{!item.is_read && <span className="w-2 h-2 rounded-full bg-astuGreen-400" />}</span><span className="block text-sm text-slate-400 mt-1">{item.message}</span><span className="block text-xs text-slate-600 mt-2">{new Date(item.created_at).toLocaleString()}</span></span></button>)}</div>}</div>;
+}
