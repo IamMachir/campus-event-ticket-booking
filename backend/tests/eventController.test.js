@@ -39,6 +39,7 @@ describe('listEvents', () => {
     expect(searchEvents).toHaveBeenCalledWith({
       search: 'Tech',
       categoryId: 7,
+      view: 'all',
       page: 2,
       limit: 20,
     });
@@ -66,12 +67,31 @@ describe('listEvents', () => {
     expect(searchEvents).toHaveBeenCalledWith({
       search: '',
       categoryId: null,
+      view: 'all',
       page: 1,
       limit: 12,
     });
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       pagination: { page: 1, limit: 12, total: 0, totalPages: 0 },
     }));
+  });
+
+  it('rejects an unsupported discovery view', async () => {
+    const res = mockRes();
+
+    await listEvents({ query: { view: 'random' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(searchEvents).not.toHaveBeenCalled();
+  });
+
+  it('passes a supported discovery view to the model', async () => {
+    searchEvents.mockResolvedValue({ events: [], total: 0 });
+    const res = mockRes();
+
+    await listEvents({ query: { view: 'today' } }, res);
+
+    expect(searchEvents).toHaveBeenCalledWith(expect.objectContaining({ view: 'today' }));
   });
 });
 

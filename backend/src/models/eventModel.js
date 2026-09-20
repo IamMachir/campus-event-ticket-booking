@@ -1,5 +1,7 @@
 const db = require('../config/db');
 const { EVENT_CATEGORIES } = require('../constants/eventCategories');
+const { DISCOVERY_VIEWS } = require('../constants/discoveryViews');
+const { getCampusDayBounds, getCampusNow } = require('../utils/campusTime');
 
 async function createEvent({ title, description, categoryId, organizerId, location, startTime, endTime, capacity }) {
   const [result] = await db.query(
@@ -45,10 +47,21 @@ function escapeLikePattern(value) {
   return value.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
 
-async function searchEvents({ search = '', categoryId = null, page = 1, limit = 12 }) {
+function buildDiscoveryQuery({ view = 'all', search = '', categoryId = null, now = new Date() }) {
   const conditions = [];
   const params = [];
   const normalizedSearch = search.trim().toLowerCase();
+
+  conditions.push("e.status = 'PUBLISHED'");
+
+  if (view === 'upcoming' || view === 'popular') {
+    conditions.push('e.start_time > ?');
+    params.push(getCampusNow(now));
+  } else if (view === 'today') {
+    const { start, end } = getCampusDayBounds(now);
+    conditions.push('e.start_time < ? AND COALESCE(e.end_time, e.start_time) >= ?');
+    params.push(end, start);
+  }
 
   if (normalizedSearch) {
     const pattern = `%${escapeLikePattern(normalizedSearch)}%`;
@@ -67,16 +80,42 @@ async function searchEvents({ search = '', categoryId = null, page = 1, limit = 
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const joins = view === 'popular'
+    ? `LEFT JOIN bookings b ON b.event_id = e.id`
+    : '';
+  const whereParams = [...params];
+  const orderParams = [];
+  let orderBy = 'e.start_time ASC, e.id ASC';
+  if (view === 'all') {
+    orderBy = '(e.start_time < ?) ASC, CASE WHEN e.start_time >= ? THEN e.start_time END ASC, e.start_time DESC, e.id ASC';
+    orderParams.push(getCampusNow(now), getCampusNow(now));
+  } else if (view === 'popular') {
+    // Popularity is confirmed bookings for upcoming published events; cancelled bookings do not count.
+    orderBy = "COUNT(CASE WHEN b.status IN ('booked', 'checked_in') THEN 1 END) DESC, e.start_time ASC, e.id ASC";
+  }
+
+  return { conditions, whereParams, orderParams, joins, whereClause, orderBy };
+}
+
+async function searchEvents({ view = 'all', search = '', categoryId = null, page = 1, limit = 12 }) {
+  if (!DISCOVERY_VIEWS.includes(view)) {
+    throw new Error('Invalid discovery view');
+  }
+
+  const query = buildDiscoveryQuery({ view, search, categoryId });
+  const countParams = [...query.whereParams];
   const offset = (page - 1) * limit;
-  const countParams = [...params];
+  const groupBy = view === 'popular' ? 'GROUP BY e.id' : '';
+  const countExpression = view === 'popular' ? 'COUNT(DISTINCT e.id)' : 'COUNT(*)';
 
   const [countResult, eventResult] = await Promise.all([
     db.query(
-      `SELECT COUNT(*) AS total
+      `SELECT ${countExpression} AS total
        FROM events e
        LEFT JOIN categories c ON e.category_id = c.id
        LEFT JOIN users u ON e.organizer_id = u.id
-       ${whereClause}`,
+       ${query.joins}
+       ${query.whereClause}`,
       countParams
     ),
     db.query(
@@ -84,10 +123,12 @@ async function searchEvents({ search = '', categoryId = null, page = 1, limit = 
        FROM events e
        LEFT JOIN categories c ON e.category_id = c.id
        LEFT JOIN users u ON e.organizer_id = u.id
-       ${whereClause}
-       ORDER BY e.start_time ASC, e.id ASC
+       ${query.joins}
+       ${query.whereClause}
+       ${groupBy}
+       ORDER BY ${query.orderBy}
        LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+      [...query.whereParams, ...query.orderParams, limit, offset]
     ),
   ]);
 
@@ -187,6 +228,7 @@ module.exports = {
   getCategories,
   getCategoryById,
   searchEvents,
+  buildDiscoveryQuery,
   getAllEvents,
   getEventsByOrganizer,
   getEventById,

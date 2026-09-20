@@ -1,0 +1,56 @@
+import { Link } from 'react-router-dom';
+import { Calendar, MapPin, Clock, Users, CheckCircle2 } from 'lucide-react';
+
+export default function EventCard({ event, booked = false, index = 0 }) {
+  const seatsLeft = event.capacity - event.seats_booked;
+  const isFull = seatsLeft <= 0;
+  const eventDate = new Date(event.start_time);
+
+  return (
+    <Link
+      to={`/events/${event.id}`}
+      className="group block animate-slide-up"
+      style={{ animationDelay: `${index * 0.05}s` }}
+    >
+      <div className="glass-card overflow-hidden h-full flex flex-col">
+        <div className="relative h-40 bg-gradient-to-br from-astu-800 to-astuGreen-800 flex items-center justify-center">
+          <Calendar className="w-12 h-12 text-astu-400/30" />
+          <div className="absolute top-3 left-3 flex flex-col items-center bg-slate-950/80 backdrop-blur-md rounded-lg px-3 py-2 border border-white/10">
+            <span className="text-2xl font-bold text-astu-400 leading-none">{eventDate.getDate()}</span>
+            <span className="text-xs text-slate-300 uppercase">{eventDate.toLocaleDateString('en', { month: 'short' })}</span>
+          </div>
+          {isFull && (
+            <div className="absolute top-3 right-3">
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-400/30">SOLD OUT</span>
+            </div>
+          )}
+          {booked && (
+            <div className="absolute top-3 right-3">
+              <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full bg-astuGreen-500/20 text-astuGreen-300 border border-astuGreen-400/30">
+                <CheckCircle2 className="w-3 h-3" /> BOOKED
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="p-5 flex-1 flex flex-col">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="font-display font-semibold text-lg text-slate-100 group-hover:text-astu-400 transition-colors">{event.title}</h3>
+            {event.category_name && <span className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-astu-500/10 text-astu-300 border border-astu-400/20">{event.category_name}</span>}
+          </div>
+          <div className="mt-3 space-y-2 flex-1">
+            <div className="flex items-center gap-2 text-sm text-slate-400"><MapPin className="w-4 h-4 text-astu-400/70" /> {event.location || 'Location to be announced'}</div>
+            <div className="flex items-center gap-2 text-sm text-slate-400"><Clock className="w-4 h-4 text-astu-400/70" /> {eventDate.toLocaleString()}</div>
+            {event.organizer_name && <div className="text-sm text-slate-500 truncate">Organized by {event.organizer_name}</div>}
+            <div className="flex items-center gap-2 text-sm text-slate-400"><Users className="w-4 h-4 text-astu-400/70" />
+              <span className={isFull ? 'text-red-400' : 'text-astuGreen-400'}>{isFull ? 'Fully booked' : `${seatsLeft} seats left`}</span>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+            <span className="text-sm text-slate-500">{event.capacity} total seats</span>
+            <span className="text-sm font-medium text-astu-400 group-hover:translate-x-1 transition-transform">View &rarr;</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Users, Sparkles, ArrowDown, CheckCircle2, Search, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Calendar, Sparkles, ArrowDown, Search, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import api from '../api/client';
 import Spinner from '../components/Spinner';
+import EventCard from '../components/EventCard';
 
 export default function Events() {
   const [events, setEvents] = useState([]);
@@ -10,9 +10,11 @@ export default function Events() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [view, setView] = useState('all');
   const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, totalPages: 0 });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [retryToken, setRetryToken] = useState(0);
   const [bookedEventIds, setBookedEventIds] = useState(() => new Set());
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function Events() {
     setError('');
     api
       .get('/events', {
-        params: { search: search || undefined, category: category || undefined, page: pagination.page, limit: pagination.limit },
+        params: { view, search: search || undefined, category: category || undefined, page: pagination.page, limit: pagination.limit },
         signal: controller.signal,
       })
       .then((res) => {
@@ -44,7 +46,7 @@ export default function Events() {
       });
 
     return () => controller.abort();
-  }, [search, category, pagination.page]);
+  }, [view, search, category, pagination.page, retryToken]);
 
   useEffect(() => {
     if (!localStorage.getItem('token')) return;
@@ -70,6 +72,11 @@ export default function Events() {
     setPagination((current) => ({ ...current, page: 1 }));
   }
 
+  function selectView(value) {
+    setView(value);
+    setPagination((current) => ({ ...current, page: 1 }));
+  }
+
   function clearFilters() {
     setSearchInput('');
     setSearch('');
@@ -78,6 +85,12 @@ export default function Events() {
   }
 
   const hasFilters = Boolean(search || category);
+  const viewDetails = {
+    all: { label: 'All Events', empty: 'No events available yet.' },
+    upcoming: { label: 'Upcoming Events', empty: 'No upcoming events found.' },
+    today: { label: "Today's Events", empty: 'There are no events scheduled for today.' },
+    popular: { label: 'Popular Events', empty: 'Popular events will appear here when booking data is available.' },
+  }[view];
 
   return (
     <div>
@@ -107,7 +120,7 @@ export default function Events() {
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
           <div>
             <h2 className="font-display font-bold text-2xl text-slate-100">
-              Upcoming <span className="text-gradient">Events</span>
+              {viewDetails.label.split(' ')[0]} <span className="text-gradient">{viewDetails.label.split(' ').slice(1).join(' ')}</span>
             </h2>
             {!loading && !error && (
               <p className="text-sm text-slate-500 mt-1">
@@ -137,8 +150,29 @@ export default function Events() {
         {error && (
           <div className="glass-card p-6 border-red-400/30 text-center">
             <p className="text-red-400">{error}</p>
+            <button type="button" onClick={() => setRetryToken((current) => current + 1)} className="mt-3 text-sm text-astu-300 hover:text-astu-200">
+              Try again
+            </button>
           </div>
         )}
+
+        <div className="flex items-center gap-2 border-b border-white/10 mb-5 overflow-x-auto">
+          {[
+            ['all', 'All Events'],
+            ['upcoming', 'Upcoming'],
+            ['today', 'Today'],
+            ['popular', 'Popular'],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => selectView(key)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${view === key ? 'border-astu-400 text-astu-300' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
           <label className="flex items-center gap-2 text-sm text-slate-400">
@@ -165,65 +199,14 @@ export default function Events() {
         ) : events.length === 0 && !error ? (
           <div className="text-center py-20">
             <Calendar className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-300 font-medium">{hasFilters ? 'No events found.' : 'No events yet.'}</p>
-            <p className="text-slate-500 text-sm mt-2">{hasFilters ? 'Try a different search term or category.' : 'Check back soon.'}</p>
+            <p className="text-slate-300 font-medium">{hasFilters ? 'No events found.' : viewDetails.empty}</p>
+            <p className="text-slate-500 text-sm mt-2">{hasFilters ? 'Try a different search term or category.' : 'Try another view or check back soon.'}</p>
             {hasFilters && <button type="button" onClick={clearFilters} className="mt-4 text-sm text-astu-400 hover:text-astu-300">Clear filters</button>}
           </div>
         ) : (
           <>
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {events.map((event, i) => {
-              const seatsLeft = event.capacity - event.seats_booked;
-              const isFull = seatsLeft <= 0;
-              const eventDate = new Date(event.start_time);
-              return (
-                <Link
-                  key={event.id}
-                  to={`/events/${event.id}`}
-                  className="group block animate-slide-up"
-                  style={{ animationDelay: `${i * 0.05}s` }}
-                >
-                  <div className="glass-card overflow-hidden h-full flex flex-col">
-                    <div className="relative h-40 bg-gradient-to-br from-astu-800 to-astuGreen-800 flex items-center justify-center">
-                      <Calendar className="w-12 h-12 text-astu-400/30" />
-                      <div className="absolute top-3 left-3 flex flex-col items-center bg-slate-950/80 backdrop-blur-md rounded-lg px-3 py-2 border border-white/10">
-                        <span className="text-2xl font-bold text-astu-400 leading-none">{eventDate.getDate()}</span>
-                        <span className="text-xs text-slate-300 uppercase">{eventDate.toLocaleDateString('en', { month: 'short' })}</span>
-                      </div>
-                      {isFull && (
-                        <div className="absolute top-3 right-3">
-                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-400/30">SOLD OUT</span>
-                        </div>
-                      )}
-                      {bookedEventIds.has(event.id) && (
-                        <div className="absolute top-3 right-3">
-                          <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full bg-astuGreen-500/20 text-astuGreen-300 border border-astuGreen-400/30">
-                            <CheckCircle2 className="w-3 h-3" /> BOOKED
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-5 flex-1 flex flex-col">
-                       <div className="flex items-start justify-between gap-3">
-                         <h3 className="font-display font-semibold text-lg text-slate-100 group-hover:text-astu-400 transition-colors">{event.title}</h3>
-                         {event.category_name && <span className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-astu-500/10 text-astu-300 border border-astu-400/20">{event.category_name}</span>}
-                       </div>
-                      <div className="mt-3 space-y-2 flex-1">
-                         <div className="flex items-center gap-2 text-sm text-slate-400"><MapPin className="w-4 h-4 text-astu-400/70" /> {event.location || 'Location to be announced'}</div>
-                        <div className="flex items-center gap-2 text-sm text-slate-400"><Clock className="w-4 h-4 text-astu-400/70" /> {eventDate.toLocaleString()}</div>
-                        <div className="flex items-center gap-2 text-sm text-slate-400"><Users className="w-4 h-4 text-astu-400/70" />
-                          <span className={isFull ? 'text-red-400' : 'text-astuGreen-400'}>{isFull ? 'Fully booked' : `${seatsLeft} seats left`}</span>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-                        <span className="text-sm text-slate-500">{event.capacity} total seats</span>
-                        <span className="text-sm font-medium text-astu-400 group-hover:translate-x-1 transition-transform">View &rarr;</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {events.map((event, i) => <EventCard key={event.id} event={event} booked={bookedEventIds.has(event.id)} index={i} />)}
           </div>
           {pagination.totalPages > 1 && (
             <div className="flex items-center justify-center gap-4 mt-8">

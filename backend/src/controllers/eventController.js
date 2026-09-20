@@ -10,11 +10,13 @@ const {
   getOrganizerStats,
 } = require('../models/eventModel');
 const { EVENT_CATEGORIES } = require('../constants/eventCategories');
+const { DISCOVERY_VIEWS } = require('../constants/discoveryViews');
 
 async function listEvents(req, res) {
   try {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const category = typeof req.query.category === 'string' ? req.query.category.trim() : '';
+    const view = typeof req.query.view === 'string' ? req.query.view.trim().toLowerCase() : 'all';
     const page = Number.parseInt(req.query.page || '1', 10);
     const limit = Number.parseInt(req.query.limit || '12', 10);
 
@@ -23,6 +25,9 @@ async function listEvents(req, res) {
     }
     if (search.length > 100) {
       return res.status(400).json({ error: 'search must be 100 characters or fewer' });
+    }
+    if (!DISCOVERY_VIEWS.includes(view)) {
+      return res.status(400).json({ error: 'Invalid event discovery view' });
     }
     if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1) {
       return res.status(400).json({ error: 'page and limit must be positive integers' });
@@ -43,6 +48,7 @@ async function listEvents(req, res) {
     const result = await searchEvents({
       search,
       categoryId,
+      view,
       page,
       limit: Math.min(limit, 50),
     });
@@ -57,7 +63,7 @@ async function listEvents(req, res) {
       },
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch events', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch events' });
   }
 }
 
@@ -70,7 +76,7 @@ async function listCategories(req, res) {
   try {
     res.json(await getCategories());
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch event categories', details: err.message });
+    res.status(500).json({ error: 'Failed to fetch event categories' });
   }
 }
 
