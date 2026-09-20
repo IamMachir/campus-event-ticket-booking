@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, Calendar, LogOut, ScanLine, Plus, Ticket, BarChart3, Info, User } from 'lucide-react';
 import { isOrganizer, isAdmin, getUser } from '../api/client';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -27,6 +28,7 @@ export default function Navbar() {
       {organizer && <Link to="/check-in" onClick={() => setOpen(false)} className={linkClass}><ScanLine className="w-4 h-4" /> Scan Ticket</Link>}
       {organizer && <Link to="/organizer/dashboard" onClick={() => setOpen(false)} className={linkClass}><BarChart3 className="w-4 h-4" /> Dashboard</Link>}
       <Link to="/about" onClick={() => setOpen(false)} className={linkClass}><Info className="w-4 h-4" /> About</Link>
+      {token && <NotificationBell />}
       {token && <Link to="/profile" onClick={() => setOpen(false)} className={linkClass}><User className="w-4 h-4" /> Profile</Link>}
     </>
   );
