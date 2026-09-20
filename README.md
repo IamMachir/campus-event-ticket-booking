@@ -268,3 +268,12 @@ npm test
 ## License
 
 This project was created for academic purposes as part of a course requirement at Adama Science and Technology University.
+
+
+## Advanced attendee features
+
+- QR ticket generation with downloadable ticket codes.
+- Camera QR scanning with permission/error recovery, ticket validation, and atomic check-in protection.
+- Saved event favorites for signed-in students.
+- In-app notifications for booking confirmations.
+- Attendee ratings for events after booking.
