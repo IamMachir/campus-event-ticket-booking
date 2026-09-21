@@ -46,8 +46,23 @@ function getCampusDayBounds(date = new Date()) {
   };
 }
 
+// Returns the day bounds for the calendar day AFTER the campus-local "today".
+// Used to identify events whose entire day has already passed so they can be
+// excluded from the home/discovery feed and tickets marked expired.
+function getCampusTomorrowBounds(date = new Date()) {
+  const currentParts = getCampusDateTimeParts(date);
+  const currentDate = toDateString(currentParts);
+  const tomorrowDate = addOneDay(currentDate);
+  const dayAfterTomorrow = addOneDay(tomorrowDate);
+  return {
+    start: `${tomorrowDate} 00:00:00`,
+    end: `${dayAfterTomorrow} 00:00:00`,
+  };
+}
+
 module.exports = {
   CAMPUS_TIMEZONE,
   getCampusNow,
   getCampusDayBounds,
+  getCampusTomorrowBounds,
 };

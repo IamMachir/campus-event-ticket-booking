@@ -170,7 +170,7 @@ describe('cancelMyBooking', () => {
 describe('checkIn', () => {
   it('rejects an unknown ticket code', async () => {
     findByTicketCode.mockResolvedValue(null);
-    const req = { body: { ticketCode: 'UNKNOWN' } };
+    const req = { body: { ticketCode: 'UNKNOWN' }, user: { id: 1, role: 'organizer' } };
     const res = mockRes();
 
     await checkIn(req, res);
@@ -179,8 +179,8 @@ describe('checkIn', () => {
   });
 
   it('rejects an already checked-in ticket', async () => {
-    findByTicketCode.mockResolvedValue({ id: 1, status: 'checked_in', ticket_code: 'ABC123' });
-    const req = { body: { ticketCode: 'ABC123' } };
+    findByTicketCode.mockResolvedValue({ id: 1, status: 'checked_in', ticket_code: 'ABC123', organizer_id: 1 });
+    const req = { body: { ticketCode: 'ABC123' }, user: { id: 1, role: 'organizer' } };
     const res = mockRes();
 
     await checkIn(req, res);
@@ -189,13 +189,14 @@ describe('checkIn', () => {
   });
 
   it('checks in a valid booked ticket', async () => {
-    findByTicketCode.mockResolvedValue({ id: 1, status: 'booked', ticket_code: 'ABC123' });
-    const req = { body: { ticketCode: 'ABC123' } };
+    findByTicketCode.mockResolvedValue({ id: 1, status: 'booked', ticket_code: 'ABC123', organizer_id: 1 });
+    markCheckedIn.mockResolvedValue(1);
+    const req = { body: { ticketCode: 'ABC123' }, user: { id: 1, role: 'organizer' } };
     const res = mockRes();
 
     await checkIn(req, res);
 
     expect(markCheckedIn).toHaveBeenCalledWith('ABC123');
-    expect(res.json).toHaveBeenCalledWith({ message: 'Checked in successfully', ticketCode: 'ABC123' });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Checked in successfully', ticketCode: 'ABC123' }));
   });
 });

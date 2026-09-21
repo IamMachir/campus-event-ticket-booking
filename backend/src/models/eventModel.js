@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const { EVENT_CATEGORIES } = require('../constants/eventCategories');
 const { DISCOVERY_VIEWS } = require('../constants/discoveryViews');
-const { getCampusDayBounds, getCampusNow } = require('../utils/campusTime');
+const { getCampusDayBounds, getCampusNow, getCampusTomorrowBounds } = require('../utils/campusTime');
 
 async function createEvent({ title, description, categoryId, organizerId, location, startTime, endTime, capacity }) {
   const [result] = await db.query(
@@ -54,6 +54,15 @@ function buildDiscoveryQuery({ view = 'all', search = '', categoryId = null, now
 
   conditions.push("e.status = 'PUBLISHED'");
 
+  if (view === 'all') {
+    // Exclude events whose entire campus-local day has already passed so they
+    // no longer appear on the home/discovery feed. An event day is "past" once
+    // the campus-local calendar has rolled over to the next day.
+    const { start: tomorrowStart } = getCampusTomorrowBounds(now);
+    conditions.push('e.start_time >= ?');
+    params.push(tomorrowStart);
+  }
+
   if (view === 'upcoming' || view === 'popular') {
     conditions.push('e.start_time > ?');
     params.push(getCampusNow(now));
@@ -87,8 +96,7 @@ function buildDiscoveryQuery({ view = 'all', search = '', categoryId = null, now
   const orderParams = [];
   let orderBy = 'e.start_time ASC, e.id ASC';
   if (view === 'all') {
-    orderBy = '(e.start_time < ?) ASC, CASE WHEN e.start_time >= ? THEN e.start_time END ASC, e.start_time DESC, e.id ASC';
-    orderParams.push(getCampusNow(now), getCampusNow(now));
+    orderBy = 'e.start_time ASC, e.id ASC';
   } else if (view === 'popular') {
     // Popularity is confirmed bookings for upcoming published events; cancelled bookings do not count.
     orderBy = "COUNT(CASE WHEN b.status IN ('booked', 'checked_in') THEN 1 END) DESC, e.start_time ASC, e.id ASC";

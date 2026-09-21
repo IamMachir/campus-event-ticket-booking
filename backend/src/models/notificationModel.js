@@ -1,5 +1,19 @@
 const db = require('../config/db');
+
 async function createNotification({ userId, type = 'system', title, message, eventId = null }) {
+  // Dedupe: avoid creating a duplicate notification with the same user + type +
+  // event_id within a 24h window. This prevents repeated "1 day left" or
+  // "expired" reminders from spamming the user on every processing cycle.
+  if (eventId) {
+    const [existing] = await db.query(
+      `SELECT id FROM notifications
+       WHERE user_id = ? AND type = ? AND event_id = ?
+         AND created_at > (NOW() - INTERVAL 24 HOUR)
+       LIMIT 1`,
+      [userId, type, eventId]
+    );
+    if (existing.length > 0) return existing[0].id;
+  }
   const [result] = await db.query('INSERT INTO notifications (user_id, type, title, message, event_id) VALUES (?, ?, ?, ?, ?)', [userId, type, title, message, eventId]);
   return result.insertId;
 }

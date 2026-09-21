@@ -1,6 +1,6 @@
 const QRCode = require('qrcode');
 const pool = require('../config/db');
-const { getBookingsByUser, findByTicketCode, findById, cancelBooking, markCheckedIn } = require('../models/bookingModel');
+const { getBookingsByUser, findByTicketCode, findById, cancelBooking, markCheckedIn, expirePastDayBookings, getBookingsExpiringTomorrow } = require('../models/bookingModel');
 const { decrementSeatsBooked } = require('../models/eventModel');
 const { findUserById } = require('../models/userModel');
 const { createNotification } = require('../models/notificationModel');
@@ -35,21 +35,96 @@ async function cancelMyBooking(req, res) {
 }
 
 function bookingSummary(booking) { return { id: booking.id, ticket_code: booking.ticket_code, status: booking.status, event_id: booking.event_id, event_title: booking.event_title, start_time: booking.start_time, location: booking.location, attendee_name: booking.attendee_name, checked_in_at: booking.checked_in_at }; }
+
 async function validateTicket(req, res) {
-  try { const ticketCode = req.body.ticketCode?.trim(); if (!ticketCode) return res.status(400).json({ error: 'Ticket code is required' }); const booking = await findByTicketCode(ticketCode);
+  try {
+    const ticketCode = req.body.ticketCode?.trim();
+    if (!ticketCode) return res.status(400).json({ error: 'Ticket code is required' });
+    const booking = await findByTicketCode(ticketCode);
     if (!booking) return res.status(404).json({ error: 'Ticket not found. This QR code is not valid.' });
+
+    // Organizer ownership check: only the organizer who created the event (or an
+    // admin) may validate/check-in tickets for it. A valid ticket that belongs
+    // to someone else's event is rejected with a professional message.
+    const isOwner = booking.organizer_id === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'This ticket belongs to an event you did not organize. You can only check in tickets for your own events.', notYourEvent: true });
+    }
+
     if (booking.status === 'checked_in') return res.status(409).json({ error: 'This ticket has already been used and cannot be scanned again.', fraud: true, booking: bookingSummary(booking) });
     if (booking.status === 'cancelled') return res.status(409).json({ error: 'This ticket was cancelled and is not valid for entry.', fraud: true, booking: bookingSummary(booking) });
+    if (booking.status === 'expired') return res.status(409).json({ error: 'This ticket has expired. The event day has passed and the ticket is no longer valid for entry.', expired: true, booking: bookingSummary(booking) });
     res.json({ valid: true, message: 'Valid ticket', booking: bookingSummary(booking) });
   } catch (err) { res.status(500).json({ error: 'Ticket validation failed', details: err.message }); }
 }
+
 async function checkIn(req, res) {
-  try { const ticketCode = req.body.ticketCode?.trim(); if (!ticketCode) return res.status(400).json({ error: 'Ticket code is required' }); const booking = await findByTicketCode(ticketCode);
+  try {
+    const ticketCode = req.body.ticketCode?.trim();
+    if (!ticketCode) return res.status(400).json({ error: 'Ticket code is required' });
+    const booking = await findByTicketCode(ticketCode);
     if (!booking) return res.status(404).json({ error: 'Ticket not found. This QR code is not valid.' });
+
+    // Organizer ownership check (same as validate).
+    const isOwner = booking.organizer_id === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'This ticket belongs to an event you did not organize. You can only check in tickets for your own events.', notYourEvent: true });
+    }
+
     if (booking.status === 'checked_in') return res.status(409).json({ error: 'This ticket has already been used and cannot be scanned again.', fraud: true, booking: bookingSummary(booking) });
     if (booking.status === 'cancelled') return res.status(409).json({ error: 'This ticket was cancelled and is not valid for entry.', fraud: true, booking: bookingSummary(booking) });
+    if (booking.status === 'expired') return res.status(409).json({ error: 'This ticket has expired. The event day has passed and the ticket is no longer valid for entry.', expired: true, booking: bookingSummary(booking) });
     const changed = await markCheckedIn(ticketCode); if (!changed) return res.status(409).json({ error: 'This ticket was just checked in by another scanner.', fraud: true });
     const checkedInBooking = await findByTicketCode(ticketCode); res.json({ valid: true, message: 'Checked in successfully', ticketCode, booking: bookingSummary(checkedInBooking) });
   } catch (err) { res.status(500).json({ error: 'Check-in failed', details: err.message }); }
 }
-module.exports = { bookEvent, myBookings, cancelMyBooking, validateTicket, checkIn };
+
+// Process all pending ticket expirations and "1 day left" reminders.
+// Called on server startup and on a periodic interval. This is idempotent:
+// already-expired bookings are skipped, and notifications are deduped by the
+// notification model so re-running is safe.
+async function processExpirations(date = new Date()) {
+  try {
+    // 1. Send "1 day left" reminders for events happening tomorrow.
+    const expiringTomorrow = await getBookingsExpiringTomorrow(date);
+    for (const booking of expiringTomorrow) {
+      try {
+        await createNotification({
+          userId: booking.user_id,
+          type: 'expiry_reminder',
+          title: '1 day left — ' + booking.event_title,
+          message: 'Your ticket for "' + booking.event_title + '" expires in 1 day. Make sure to attend or check in before the event day passes.',
+          eventId: booking.event_id,
+        });
+      } catch (err) {
+        console.error('Expiry reminder notification failed:', err.message);
+      }
+    }
+
+    // 2. Mark booked tickets whose event day has passed as expired + notify.
+    const expired = await expirePastDayBookings(date);
+    for (const booking of expired) {
+      try {
+        await createNotification({
+          userId: booking.user_id,
+          type: 'ticket_expired',
+          title: 'Ticket expired — ' + booking.event_title,
+          message: 'Your ticket for "' + booking.event_title + '" has expired because the event day has passed. Expired tickets cannot be used for entry.',
+          eventId: booking.event_id,
+        });
+      } catch (err) {
+        console.error('Ticket expired notification failed:', err.message);
+      }
+    }
+
+    if (expired.length > 0 || expiringTomorrow.length > 0) {
+      console.log(`Expiration processing: ${expiringTomorrow.length} reminder(s) sent, ${expired.length} ticket(s) expired.`);
+    }
+  } catch (err) {
+    console.error('Expiration processing failed:', err.message);
+  }
+}
+
+module.exports = { bookEvent, myBookings, cancelMyBooking, validateTicket, checkIn, processExpirations };

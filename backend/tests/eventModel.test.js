@@ -17,8 +17,10 @@ describe('buildDiscoveryQuery', () => {
   it('sorts all published events with upcoming events first', () => {
     const query = buildDiscoveryQuery({ view: 'all', now });
 
-    expect(query.orderBy).toContain('(e.start_time < ?) ASC');
-    expect(query.orderParams).toEqual(['2026-09-21 00:30:00', '2026-09-21 00:30:00']);
+    expect(query.conditions).toContain('e.start_time >= ?');
+    expect(query.whereParams).toEqual(['2026-09-22 00:00:00']);
+    expect(query.orderBy).toBe('e.start_time ASC, e.id ASC');
+    expect(query.orderParams).toEqual([]);
   });
 
   it('uses confirmed bookings to rank upcoming popular events', () => {

@@ -86,6 +86,7 @@ export default function Bookings() {
                         <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full mt-2 capitalize ${
                           booking.status === 'booked' ? 'bg-astuGreen-500/20 text-astuGreen-300' :
                           booking.status === 'checked_in' ? 'bg-astu-500/20 text-astu-300' :
+                          booking.status === 'expired' ? 'bg-orange-500/20 text-orange-300' :
                           'bg-red-500/20 text-red-400'
                         }`}>{booking.status}</span>
                       </div>

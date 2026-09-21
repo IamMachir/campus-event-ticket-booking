@@ -11,6 +11,7 @@ const favoriteRoutes = require('./routes/favoriteRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const ratingRoutes = require('./routes/ratingRoutes');
 const { runMigrations } = require('./config/runMigrations');
+const { processExpirations } = require('./controllers/bookingController');
 
 const app = express();
 
@@ -57,6 +58,11 @@ const PORT = process.env.PORT || 5000;
 runMigrations()
   .then(() => {
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    // Process ticket expirations + "1 day left" reminders on startup, then
+    // every hour. Idempotent: already-expired bookings are skipped and
+    // notifications are deduped by the notification model.
+    processExpirations();
+    setInterval(() => processExpirations(), 60 * 60 * 1000);
   })
   .catch((err) => {
     console.error('Migration failed:', err.message);
