@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
-const { listFavorites, saveFavorite, deleteFavorite } = require('../controllers/favoriteController');
-router.use(requireAuth);
+const { requireAuth, requireRole } = require('../middleware/auth');
+const { listFavorites, listFavoriteEvents, saveFavorite, deleteFavorite } = require('../controllers/favoriteController');
+router.use(requireAuth, requireRole('student'));
 router.get('/me', listFavorites);
+router.get('/events', listFavoriteEvents);
 router.post('/:eventId', saveFavorite);
 router.delete('/:eventId', deleteFavorite);
 module.exports = router;

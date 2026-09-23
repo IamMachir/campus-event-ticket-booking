@@ -97,6 +97,8 @@ async function processExpirations(date = new Date()) {
           title: '1 day left — ' + booking.event_title,
           message: 'Your ticket for "' + booking.event_title + '" expires in 1 day. Make sure to attend or check in before the event day passes.',
           eventId: booking.event_id,
+          preference: 'approaching_enabled',
+          notificationKey: `event:${booking.event_id}:approaching:${date.toISOString().slice(0, 10)}:user:${booking.user_id}`,
         });
       } catch (err) {
         console.error('Expiry reminder notification failed:', err.message);
@@ -113,6 +115,7 @@ async function processExpirations(date = new Date()) {
           title: 'Ticket expired — ' + booking.event_title,
           message: 'Your ticket for "' + booking.event_title + '" has expired because the event day has passed. Expired tickets cannot be used for entry.',
           eventId: booking.event_id,
+          notificationKey: `booking:${booking.id}:expired`,
         });
       } catch (err) {
         console.error('Ticket expired notification failed:', err.message);

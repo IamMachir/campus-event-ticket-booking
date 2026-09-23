@@ -11,6 +11,52 @@ const {
 } = require('../models/eventModel');
 const { EVENT_CATEGORIES } = require('../constants/eventCategories');
 const { DISCOVERY_VIEWS } = require('../constants/discoveryViews');
+const { createNotification } = require('../models/notificationModel');
+const { getEventAudience } = require('../models/eventNotificationModel');
+const { getUsersInterestedInCategory } = require('../models/notificationPreferenceModel');
+
+function comparableDate(value) {
+  if (value === null || value === undefined || value === '') return '';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? String(value) : String(parsed.getTime());
+}
+
+function eventValueChanged(before, after) {
+  return comparableDate(before) !== comparableDate(after);
+}
+
+async function notifyEventAudience(event, {
+  type,
+  title,
+  message,
+  preference,
+  notificationKey,
+}) {
+  const userIds = await getEventAudience(event.id);
+  await Promise.all(userIds.map((userId) => createNotification({
+    userId,
+    type,
+    title,
+    message,
+    eventId: event.id,
+    preference,
+    notificationKey: `${notificationKey}:user:${userId}`,
+  })));
+}
+
+async function notifyInterestMatches(event) {
+  if (!event.category_id || event.status !== 'PUBLISHED') return;
+  const userIds = await getUsersInterestedInCategory(event.category_id);
+  await Promise.all(userIds.map((userId) => createNotification({
+    userId,
+    type: 'interest_match',
+    title: 'New event matches your interests',
+    message: `"${event.title}" was just published in ${event.category_name || 'one of your selected categories'}.`,
+    eventId: event.id,
+    preference: 'interest_match_enabled',
+    notificationKey: `event:${event.id}:interest-match:user:${userId}`,
+  })));
+}
 
 async function listEvents(req, res) {
   try {
@@ -120,6 +166,12 @@ async function addEvent(req, res) {
       capacity,
     });
 
+    const event = await getEventById(eventId);
+    try {
+      await notifyInterestMatches(event);
+    } catch (notificationError) {
+      console.error('Interest-match notifications failed:', notificationError.message);
+    }
     res.status(201).json({ id: eventId, title });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create event', details: err.message });
@@ -145,7 +197,33 @@ async function editEvent(req, res) {
       return res.status(400).json({ error: 'A valid event category is required' });
     }
 
+    const dateChanged = eventValueChanged(event.start_time, startTime)
+      || eventValueChanged(event.end_time, endTime);
+    const locationChanged = (event.location || '') !== (location || '');
     await updateEvent(req.params.id, { title, description, categoryId, location, startTime, endTime, capacity });
+    const updatedEvent = await getEventById(req.params.id);
+    try {
+      if (dateChanged) {
+        await notifyEventAudience(updatedEvent, {
+          type: 'event_date_changed',
+          title: 'Event date changed',
+          message: `The date or time for "${updatedEvent.title}" has changed. Check the updated event schedule.`,
+          preference: 'date_change_enabled',
+          notificationKey: `event:${updatedEvent.id}:date:${comparableDate(updatedEvent.start_time)}:${comparableDate(updatedEvent.end_time)}`,
+        });
+      }
+      if (locationChanged) {
+        await notifyEventAudience(updatedEvent, {
+          type: 'event_location_changed',
+          title: 'Event location changed',
+          message: `The location for "${updatedEvent.title}" is now ${updatedEvent.location || 'to be announced'}.`,
+          preference: 'location_change_enabled',
+          notificationKey: `event:${updatedEvent.id}:location:${updatedEvent.location || 'tba'}`,
+        });
+      }
+    } catch (notificationError) {
+      console.error('Event-change notifications failed:', notificationError.message);
+    }
     res.json({ id: Number(req.params.id), title });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update event', details: err.message });

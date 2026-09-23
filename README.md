@@ -82,9 +82,7 @@ Start MySQL, then run the migration files (this creates the database automatical
 
 ```bash
 cd backend
-mysql -u root -p < migrations/001_init_schema.sql
-mysql -u root -p < migrations/002_add_indexes.sql
-mysql -u root -p < migrations/003_auth_profile_and_reset.sql
+for migration in migrations/*.sql; do mysql -u root -p < "$migration"; done
 ```
 
 Enter your MySQL password when prompted. The migration creates the `campus_events` database and all tables for you.
@@ -190,9 +188,7 @@ If any migration files were updated or added, re-run them:
 
 ```bash
 cd backend
-mysql -u root -p < migrations/001_init_schema.sql
-mysql -u root -p < migrations/002_add_indexes.sql
-mysql -u root -p < migrations/003_auth_profile_and_reset.sql
+for migration in migrations/*.sql; do mysql -u root -p < "$migration"; done
 ```
 
 If you already have data in your tables and do not want to lose it, check the migration files first before running them. Only re-run if new columns or tables were added. Migrations also run automatically on server startup.
@@ -275,5 +271,7 @@ This project was created for academic purposes as part of a course requirement a
 - QR ticket generation with downloadable ticket codes.
 - Camera QR scanning with permission/error recovery, ticket validation, and atomic check-in protection.
 - Saved event favorites for signed-in students.
-- In-app notifications for booking confirmations.
+- My Saved Events page with search, empty/loading/error states, and duplicate-safe save toggles.
+- In-app notifications for booking confirmations, approaching booked events, event date/location changes, and matching interests.
+- Notification preferences and category interest selection for students.
 - Attendee ratings for events after booking.

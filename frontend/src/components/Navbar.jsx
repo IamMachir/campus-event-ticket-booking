@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Calendar, LogOut, ScanLine, Plus, Ticket, BarChart3, Info, User } from 'lucide-react';
+import { Menu, X, Calendar, LogOut, ScanLine, Plus, Ticket, BarChart3, Info, User, Heart, Settings } from 'lucide-react';
 import { isOrganizer, isAdmin, getUser } from '../api/client';
 import NotificationBell from './NotificationBell';
 
@@ -25,11 +25,13 @@ export default function Navbar() {
       <Link to="/" onClick={() => setOpen(false)} className={linkClass}><Calendar className="w-4 h-4" /> Events</Link>
       {organizer && <Link to="/events/new" onClick={() => setOpen(false)} className={linkClass}><Plus className="w-4 h-4" /> Create</Link>}
       {token && <Link to="/bookings" onClick={() => setOpen(false)} className={linkClass}><Ticket className="w-4 h-4" /> My Bookings</Link>}
+      {token && user?.role === 'student' && <Link to="/saved-events" onClick={() => setOpen(false)} className={linkClass}><Heart className="w-4 h-4" /> Saved</Link>}
       {organizer && <Link to="/check-in" onClick={() => setOpen(false)} className={linkClass}><ScanLine className="w-4 h-4" /> Scan Ticket</Link>}
       {organizer && <Link to="/organizer/dashboard" onClick={() => setOpen(false)} className={linkClass}><BarChart3 className="w-4 h-4" /> Dashboard</Link>}
       <Link to="/about" onClick={() => setOpen(false)} className={linkClass}><Info className="w-4 h-4" /> About</Link>
       {token && <NotificationBell />}
       {token && <Link to="/profile" onClick={() => setOpen(false)} className={linkClass}><User className="w-4 h-4" /> Profile</Link>}
+      {token && <Link to="/notification-preferences" onClick={() => setOpen(false)} className={linkClass}><Settings className="w-4 h-4" /> Alerts</Link>}
     </>
   );
 

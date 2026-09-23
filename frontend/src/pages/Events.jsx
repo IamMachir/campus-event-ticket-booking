@@ -17,6 +17,7 @@ export default function Events() {
   const [retryToken, setRetryToken] = useState(0);
   const [bookedEventIds, setBookedEventIds] = useState(() => new Set());
   const [favoriteEventIds, setFavoriteEventIds] = useState(() => new Set());
+  const [pendingFavoriteIds, setPendingFavoriteIds] = useState(() => new Set());
 
   useEffect(() => {
     api.get('/events/categories')
@@ -65,10 +66,12 @@ export default function Events() {
 
   async function toggleFavorite(eventId) {
     if (!localStorage.getItem('token')) { setError('Sign in to save favorite events.'); return; }
+    setPendingFavoriteIds((current) => new Set(current).add(eventId));
     try {
       if (favoriteEventIds.has(eventId)) { await api.delete('/favorites/' + eventId); setFavoriteEventIds((current) => { const next = new Set(current); next.delete(eventId); return next; }); }
       else { await api.post('/favorites/' + eventId); setFavoriteEventIds((current) => new Set(current).add(eventId)); }
     } catch (err) { setError(err.response?.data?.error || 'Could not update favorites.'); }
+    finally { setPendingFavoriteIds((current) => { const next = new Set(current); next.delete(eventId); return next; }); }
   }
 
   function scrollToUpcoming() {
@@ -220,7 +223,7 @@ export default function Events() {
         ) : (
           <>
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {events.map((event, i) => <EventCard key={event.id} event={event} booked={bookedEventIds.has(event.id)} favorite={favoriteEventIds.has(event.id)} onToggleFavorite={toggleFavorite} index={i} />)}
+            {events.map((event, i) => <EventCard key={event.id} event={event} booked={bookedEventIds.has(event.id)} favorite={favoriteEventIds.has(event.id)} favoritePending={pendingFavoriteIds.has(event.id)} onToggleFavorite={toggleFavorite} index={i} />)}
           </div>
           {pagination.totalPages > 1 && (
             <div className="flex items-center justify-center gap-4 mt-8">
