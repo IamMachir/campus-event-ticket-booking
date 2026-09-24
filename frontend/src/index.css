@@ -70,3 +70,91 @@
     background-size: 40px 40px;
   }
 }
+
+/* Theme overrides keep the existing default theme intact while allowing the
+   appearance setting to recolor the utility classes used throughout the app. */
+html[data-theme='dark'] body {
+  background-color: #00030a;
+  background-image:
+    radial-gradient(ellipse at top, rgba(0, 153, 230, 0.1) 0%, transparent 48%),
+    radial-gradient(ellipse at bottom, rgba(0, 204, 95, 0.08) 0%, transparent 48%);
+}
+
+html[data-theme='dark'] .glass-card {
+  background-color: rgba(2, 6, 23, 0.72);
+  border-color: rgba(148, 163, 184, 0.14);
+}
+
+html[data-theme='white'] body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  background-image:
+    radial-gradient(ellipse at top, rgba(0, 153, 230, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(0, 204, 95, 0.06) 0%, transparent 50%);
+}
+
+html[data-theme='white'] .glass-card {
+  background-color: rgba(255, 255, 255, 0.84);
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme='white'] .bg-slate-950,
+html[data-theme='white'] .bg-slate-950\/80 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+html[data-theme='white'] .bg-slate-950\/70,
+html[data-theme='white'] .bg-slate-950\/90 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+html[data-theme='white'] .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+html[data-theme='white'] .hover\:bg-white\/5:hover {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+}
+
+html[data-theme='white'] .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+html[data-theme='white'] .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+html[data-theme='white'] .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html[data-theme='white'] .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html[data-theme='white'] .text-slate-300 {
+  color: #334155 !important;
+}
+
+html[data-theme='white'] .text-slate-400 {
+  color: #475569 !important;
+}
+
+html[data-theme='white'] .text-slate-500 {
+  color: #64748b !important;
+}
+
+html[data-theme='white'] .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+html[data-theme='white'] .text-slate-950 {
+  color: #f8fafc !important;
+}
+
+html[data-theme='white'] input,
+html[data-theme='white'] textarea,
+html[data-theme='white'] select {
+  color-scheme: light;
+}

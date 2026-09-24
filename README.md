@@ -63,7 +63,7 @@ Follow these steps if you have never cloned this repository before.
 
 ### Prerequisites
 
-- Node.js 18 or higher (download from https://nodejs.org)
+- Node.js 20 or higher (download from https://nodejs.org)
 - MySQL 8.0 or higher (download from https://dev.mysql.com/downloads)
 - Git (download from https://git-scm.com)
 
@@ -241,6 +241,7 @@ npm test
 - Auto-redirect to login when session expires
 - Server-side input validation on all write endpoints
 - Responsive layout + loading states
+- Appearance setting with Default, Dark mode, and White mode options
 - Seed script for demo data
 - Organizer analytics dashboard (bookings per event, check-in rate) with a My Events view
 - Dark theme UI with ASTU blue/green color scheme and glow effects

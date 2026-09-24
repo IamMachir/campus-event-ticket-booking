@@ -2,6 +2,9 @@
   "name": "campus-event-ticket-booking-backend",
   "version": "0.1.0",
   "description": "Backend API for Campus Event Discovery & Ticket Booking Web App",
+  "engines": {
+    "node": ">=20"
+  },
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {

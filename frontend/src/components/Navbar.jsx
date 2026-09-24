@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Calendar, LogOut, ScanLine, Plus, Ticket, BarChart3, Info, User, Heart, Settings } from 'lucide-react';
+import { Menu, X, Calendar, LogOut, ScanLine, Plus, Ticket, BarChart3, Info, User, Heart, Settings, Palette } from 'lucide-react';
 import { isOrganizer, isAdmin, getUser } from '../api/client';
 import NotificationBell from './NotificationBell';
 
@@ -31,6 +31,7 @@ export default function Navbar() {
       <Link to="/about" onClick={() => setOpen(false)} className={linkClass}><Info className="w-4 h-4" /> About</Link>
       {token && <NotificationBell />}
       {token && <Link to="/profile" onClick={() => setOpen(false)} className={linkClass}><User className="w-4 h-4" /> Profile</Link>}
+      {token && <Link to="/appearance" onClick={() => setOpen(false)} className={linkClass}><Palette className="w-4 h-4" /> Appearance</Link>}
       {token && <Link to="/notification-preferences" onClick={() => setOpen(false)} className={linkClass}><Settings className="w-4 h-4" /> Alerts</Link>}
     </>
   );

@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Campus event discovery and ticket booking system for Adama Science and Technology University" />
     <title>CampusEvents — ASTU Event Ticket Booking</title>
+    <script>
+      try {
+        const savedTheme = localStorage.getItem('campus-events-appearance');
+        if (['default', 'dark', 'white'].includes(savedTheme)) {
+          document.documentElement.dataset.theme = savedTheme;
+        }
+      } catch {
+        // The appearance provider will fall back to the default theme.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
